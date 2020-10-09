@@ -1,0 +1,68 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
+
+namespace ExactlyOnce.Routing.Controller.Model
+{
+    public class EndpointInstance
+    {
+        public EndpointInstance(string instanceId, List<MessageHandlerInstance> messageHandlers, Dictionary<string, MessageKind> recognizedMessages, string site)
+        {
+            InstanceId = instanceId;
+            MessageHandlers = messageHandlers;
+            RecognizedMessages = recognizedMessages;
+            Site = site;
+        }
+
+        public string InstanceId { get; }
+        public string Site { get; private set; }
+        public List<MessageHandlerInstance> MessageHandlers { get; private set; }
+        public Dictionary<string, MessageKind> RecognizedMessages { get; }
+
+        public void Move(string site)
+        {
+            Site = site;
+        }
+
+        public List<string> Update(List<MessageHandlerInstance> messageHandlers, Dictionary<string, MessageKind> newRecognizedMessages)
+        {
+            MessageHandlers = messageHandlers;
+            var modifications = new List<Action<Dictionary<string, MessageKind>>>();
+            var modifiedKeys = new List<string>();
+
+            foreach (var (type, kind) in newRecognizedMessages)
+            {
+                if (!RecognizedMessages.ContainsKey(type))
+                {
+                    //Message has been added
+                    modifications.Add(x => x.Add(type, kind));
+                    modifiedKeys.Add(type);
+                }
+                else if (newRecognizedMessages[type] != RecognizedMessages[type])
+                {
+                    //Message type has changed
+                    modifications.Add(x => x[type] = kind);
+                    modifiedKeys.Add(type);
+                }
+            }
+
+            foreach (var type in RecognizedMessages.Keys)
+            {
+                if (!newRecognizedMessages.ContainsKey(type))
+                {
+                    //Message has been removed
+                    modifications.Add(x => x.Remove(type));
+                    modifiedKeys.Add(type);
+                }
+            }
+
+            foreach (var modification in modifications)
+            {
+                modification(RecognizedMessages);
+            }
+
+            return modifiedKeys;
+        }
+    }
+}
