@@ -10,10 +10,11 @@
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Storage" Version="3.0.10" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.SignalRService" Version="1.2.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.8.0" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="1.3.4" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ExactlyOnce.AzureFunctions\ExactlyOnce.AzureFunctions.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model\ExactlyOnce.Routing.Controller.Model.csproj" />
   </ItemGroup>
 

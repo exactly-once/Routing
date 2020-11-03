@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace ExactlyOnce.Routing.Controller.Model
+namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public class Inbox
     {
@@ -12,14 +12,25 @@ namespace ExactlyOnce.Routing.Controller.Model
             EventQueues = eventQueues;
         }
 
-        public void AppendAndProcess(Event evnt, Action<object> processCallback)
+        public Inbox() 
+            : this(new Dictionary<string, InboxQueue>())
         {
-            if (!EventQueues.TryGetValue(evnt.Source, out var queue))
+        }
+
+        public IEnumerable<IEvent> AppendAndProcess(EventMessage eventMessage, Func<IEvent, IEnumerable<IEvent>> processCallback)
+        {
+            if (!eventMessage.Sequence.HasValue)
             {
-                queue = new InboxQueue(new List<Event>(), -1);
+                return processCallback(eventMessage.Payload);
             }
 
-            queue.AppendAndProcess(evnt, processCallback);
+            if (!EventQueues.TryGetValue(eventMessage.Source, out var queue))
+            {
+                queue = new InboxQueue(new List<EventMessage>(), -1);
+                EventQueues[eventMessage.Source] = queue;
+            }
+
+            return queue.AppendAndProcess(eventMessage, processCallback);
         }
     }
 }

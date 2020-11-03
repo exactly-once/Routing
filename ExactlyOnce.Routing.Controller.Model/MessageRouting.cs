@@ -56,7 +56,9 @@ namespace ExactlyOnce.Routing.Controller.Model
         public string Endpoint { get; }
     }
 
-    public class MessageRouting
+    public class MessageRouting : IEventHandler<MessageHandlerAdded>,
+        IEventHandler<MessageHandlerRemoved>,
+        IEventHandler<MessageKindChanged>
     {
         public MessageRouting(string messageType, List<Destination> destinations)
         {
@@ -265,6 +267,22 @@ namespace ExactlyOnce.Routing.Controller.Model
                         destination.Sites);
                 }
             }
+        }
+
+        public IEnumerable<IEvent> Handle(MessageHandlerAdded e)
+        {
+            return HandlerAdded(e.HandlerType, e.Site, e.Endpoint, MessageKind.Undefined /*TODO WHY?*/);
+        }
+
+        public IEnumerable<IEvent> Handle(MessageHandlerRemoved e)
+        {
+            return HandlerRemoved(e.HandlerType, e.Site, e.Endpoint);
+        }
+
+        public IEnumerable<IEvent> Handle(MessageKindChanged e)
+        {
+            MessageKindChanged(e.Endpoint, e.NewKind);
+            return Enumerable.Empty<IEvent>();
         }
     }
 }

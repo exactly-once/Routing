@@ -3,22 +3,16 @@ using System.Linq;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    public class Topology
+    public class Topology : IEventHandler<RouterInterfacesChanged>, IEventHandler<RouterAdded>
     {
-        public Topology(Dictionary<string, RouterInfo> routers, List<RouterInterfaceRule> rules, Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMap)
+        public Topology(Dictionary<string, RouterInfo> routers, List<RouterInterfaceRule> rules)
         {
             Routers = routers;
             Rules = rules;
-            DestinationSiteToNextHopMap = destinationSiteToNextHopMap;
         }
 
-        //Used for building routing table
-        public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMap { get; private set; }
-
-        //Source information
         public Dictionary<string, RouterInfo> Routers { get; }
         public List<RouterInterfaceRule> Rules { get; }
-
 
         /*
          * Problems
@@ -32,21 +26,31 @@ namespace ExactlyOnce.Routing.Controller.Model
          *  Router/interface list -> connection list -> active connection list -> 
          */
 
-        public TopologyInfo UpdateRouter(string routerName, RouterPendingChanges changeSet)
+        public IEnumerable<IEvent> Handle(RouterInterfacesChanged e)
+        {
+            return UpdateRouter(e.Router, e.Interfaces);
+        }
+
+        public IEnumerable<IEvent> Handle(RouterAdded e)
+        {
+            return UpdateRouter(e.Router, e.Interfaces);
+        }
+
+        public IEnumerable<IEvent> UpdateRouter(string routerName, List<string> interfaces)
         {
             if (!Routers.TryGetValue(routerName, out var router))
             {
-                router = new RouterInfo(new List<string>());
+                router = new RouterInfo(interfaces);
                 Routers[routerName] = router;
             }
-
-            router.InterfacesAdded(changeSet.InterfacesAdded);
-            router.InterfacesRemoved(changeSet.InterfacesRemoved);
-
+            else
+            {
+                router.UpdateInterfaces(interfaces);
+            }
             return RebuildDataStructures();
         }
 
-        TopologyInfo RebuildDataStructures()
+        IEnumerable<IEvent> RebuildDataStructures()
         {
             var allowedConnections = new List<Connection>();
             var deniedConnections = new List<DeniedConnection>();
@@ -67,9 +71,10 @@ namespace ExactlyOnce.Routing.Controller.Model
             }
 
             var sites = Routers.Values.SelectMany(r => r.Interfaces).Distinct().ToList();
-            DestinationSiteToNextHopMap = BuildDestinationSiteToNextHopMap(sites, allowedConnections);
-            return new TopologyInfo(sites, allowedConnections, deniedConnections);
+            var destinationSiteToNextHopMap = BuildDestinationSiteToNextHopMap(sites, allowedConnections);
 
+            yield return new DestinationSiteToNextHopMapChanged(destinationSiteToNextHopMap);
+            yield return new TopologyChanged(sites, allowedConnections, deniedConnections);
         }
 
         /// <summary>
@@ -169,82 +174,8 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
 
         }
-    }
 
-    public class VisitedSite
-    {
-        public VisitedSite(string site, VisitedSite previous)
-        {
-            Site = site;
-            Previous = previous;
-        }
 
-        public string Site { get; }
-        public VisitedSite Previous { get; }
-
-        public bool HasBeenVisited(string candidate)
-        {
-            return Site == candidate 
-                   || (Previous != null && Previous.HasBeenVisited(candidate));
-        }
-    }
-
-    public class RouterInfo
-    {
-        public RouterInfo(List<string> interfaces)
-        {
-            Interfaces = interfaces;
-        }
-
-        public List<string> Interfaces { get; }
-
-        public void InterfacesAdded(List<string> interfacesAdded)
-        {
-            foreach (var addedInterface in interfacesAdded)
-            {
-                if (!Interfaces.Contains(addedInterface))
-                {
-                    Interfaces.Add(addedInterface);
-                }
-            }
-        }
-
-        public void InterfacesRemoved(List<string> interfacesRemoved)
-        {
-            foreach (var removedInterface in interfacesRemoved)
-            {
-                Interfaces.Remove(removedInterface);
-            }
-        }
-    }
-
-    public class Connection //Graph edge
-    {
-        public Connection(string sourceSite, string destinationSite, string router)
-        {
-            SourceSite = sourceSite;
-            DestinationSite = destinationSite;
-            Router = router;
-        }
-
-        public string SourceSite { get; }
-        public string DestinationSite { get; }
-        public string Router { get; }
-    }
-
-    public class DeniedConnection
-    {
-        public DeniedConnection(string sourceSite, string destinationSite, string router, int deniedByRule)
-        {
-            SourceSite = sourceSite;
-            DestinationSite = destinationSite;
-            Router = router;
-            DeniedByRule = deniedByRule;
-        }
-
-        public string SourceSite { get; }
-        public string DestinationSite { get; }
-        public string Router { get; }
-        public int DeniedByRule { get; set; }
+        
     }
 }

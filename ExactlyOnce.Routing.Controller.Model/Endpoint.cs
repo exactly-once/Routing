@@ -13,6 +13,11 @@ namespace ExactlyOnce.Routing.Controller.Model
             RecognizedMessages = recognizedMessages;
         }
 
+        public Endpoint(string name)
+            : this(name, new Dictionary<string, EndpointInstance>(), new Dictionary<string, MessageKind>())
+        {
+        }
+
         public string Name { get; }
         public Dictionary<string, EndpointInstance> Instances { get; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; }
@@ -198,5 +203,6 @@ namespace ExactlyOnce.Routing.Controller.Model
 
             return hostedInEachInstance;
         }
+
     }
 }

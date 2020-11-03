@@ -1,55 +1,54 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
     public class Router
     {
-        public Router(int changeSequence, string name, Dictionary<string, RouterInstance> instances, List<string> interfacesToSites, List<RouterPendingChanges> pendingChanges)
+        public Router(string name)
+            : this(name, new Dictionary<string, RouterInstance>(), new List<string>())
         {
-            ChangeSequence = changeSequence;
+        }
+
+        public Router(string name, Dictionary<string, RouterInstance> instances, List<string> interfacesToSites)
+        {
             Name = name;
             Instances = instances;
             InterfacesToSites = interfacesToSites;
-            PendingChanges = pendingChanges;
         }
 
         public string Name { get; }
-        public int ChangeSequence { get; private set; }
         public List<string> InterfacesToSites { get; private set; }
         public Dictionary<string, RouterInstance> Instances { get;  }
-        public List<RouterPendingChanges> PendingChanges { get; }
 
-        public void TruncateChanges(int processedVersion)
+        public IEnumerable<IEvent> OnRouterStartup(string instanceId, List<string> siteInterfaces)
         {
-            PendingChanges.RemoveAll(x => x.Sequence <= processedVersion);
-        }
-
-        public bool ProcessReport(RouterInstanceReport report)
-        {
-            var newInstance = new RouterInstance(report.InstanceId, report.SiteInterfaces);
-            Instances[report.InstanceId] = newInstance;
+            var newRouter = !Instances.Any();
+            var newInstance = new RouterInstance(instanceId, siteInterfaces);
+            Instances[instanceId] = newInstance;
 
             var uniqueSites = Instances.Values.SelectMany(x => x.InterfacesToSites).Distinct();
 
             //Only site interfaces supported by all instances of the router are reported
-            var updatedSiteInterfaces = uniqueSites.Where(x => Instances.Values.All(i => i.InterfacesToSites.Contains(x)))
+            var updatedSiteInterfaces = uniqueSites
+                .Where(x => Instances.Values.All(i => i.InterfacesToSites.Contains(x)))
+                .OrderBy(x => x)
                 .ToList();
 
-            var interfacesAdded = updatedSiteInterfaces.Except(InterfacesToSites).ToList();
-            var interfacesRemoved = InterfacesToSites.Except(updatedSiteInterfaces).ToList();
-
-            InterfacesToSites = updatedSiteInterfaces;
-
-            if (interfacesRemoved.Any() || interfacesAdded.Any())
+            if (!updatedSiteInterfaces.SequenceEqual(InterfacesToSites))
             {
-                ChangeSequence++;
-                PendingChanges.Add(new RouterPendingChanges(ChangeSequence, interfacesAdded, interfacesRemoved));
-                return true;
+                if (newRouter)
+                {
+                    yield return new RouterAdded(Name, updatedSiteInterfaces);
+                }
+                else
+                {
+                    yield return new RouterInterfacesChanged(Name, updatedSiteInterfaces);
+                }
             }
 
-            return false;
-
+            InterfacesToSites = updatedSiteInterfaces;
         }
 
         /*
@@ -62,6 +61,5 @@ namespace ExactlyOnce.Routing.Controller.Model
          * configuration as long as the default router queue name is used.
          *
          */
-
     }
 }

@@ -7,6 +7,18 @@ using NUnit.Framework;
 namespace ExactlyOnce.Routing.Tests
 {
     [TestFixture]
+    public class EndToEndTests
+    {
+        [Test]
+        public void Generates_routing_table()
+        {
+
+
+
+        }
+    }
+
+    [TestFixture]
     public class EndpointTests
     {
         [Test]

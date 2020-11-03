@@ -2,9 +2,9 @@
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    public class TopologyInfo
+    public class TopologyChanged : IEvent
     {
-        public TopologyInfo(List<string> sites, List<Connection> connections, List<DeniedConnection> deniedConnections)
+        public TopologyChanged(List<string> sites, List<Connection> connections, List<DeniedConnection> deniedConnections)
         {
             Sites = sites;
             Connections = connections;

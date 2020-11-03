@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 
 namespace ExactlyOnce.AzureFunctions
 {
+    
+
     public interface IOnceExecutor
     {
         Task<TSideEffect> Once<TSideEffect>(Func<TSideEffect> action);

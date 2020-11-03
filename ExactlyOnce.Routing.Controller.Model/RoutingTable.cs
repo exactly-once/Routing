@@ -4,29 +4,62 @@ using System.Linq;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    public class RoutingTable
+    public class RoutingTable : IEventHandler<RouteAdded>,
+        IEventHandler<RouteRemoved>,
+        IEventHandler<RouteChanged>,
+        IEventHandler<DestinationSiteToNextHopMapChanged>
     {
+        public int Version { get; private set; }
         //Each entry is guaranteed to refer to a different handler type
         public Dictionary<string, List<RoutingTableEntry>> Entries { get; }
-        public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; }
+        public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; private set; }
         public Dictionary<string, EndpointSiteRoutingPolicy> SiteRoutingPolicy { get; }
 
         //TODO: How to represent replacing one handler with another?
 
+        public RoutingTable()
+            : this(
+                new Dictionary<string, List<RoutingTableEntry>>(),
+                new Dictionary<string, Dictionary<string, DestinationSiteInfo>>(),
+                new Dictionary<string, EndpointSiteRoutingPolicy>(), 
+                0)
+        {
+        }
+
         public RoutingTable(
             Dictionary<string, List<RoutingTableEntry>> entries, 
-            Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping)
+            Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping, 
+            Dictionary<string, EndpointSiteRoutingPolicy> siteRoutingPolicy, int version)
         {
             Entries = entries;
             DestinationSiteToNextHopMapping = destinationSiteToNextHopMapping;
+            SiteRoutingPolicy = siteRoutingPolicy;
+            Version = version;
         }
 
-        public void ConfigureEndpointSiteMapping(string endpoint, EndpointSiteRoutingPolicy policy)
+        public IEnumerable<IEvent> ConfigureEndpointSiteRouting(string endpoint, EndpointSiteRoutingPolicy? policy)
         {
-            SiteRoutingPolicy[endpoint] = policy;
+            if (policy.HasValue)
+            {
+                SiteRoutingPolicy[endpoint] = policy.Value;
+            }
+            else
+            {
+                SiteRoutingPolicy.Remove(endpoint);
+            }
+
+            var existingEntries = Entries.Values
+                .SelectMany(x => x)
+                .Where(e => e.Endpoint == endpoint);
+
+            foreach (var entry in existingEntries)
+            {
+                entry.UpdateSiteRoutingPolicy(policy ?? EndpointSiteRoutingPolicy.RouteToOldest);
+            }
+            return GenerateChangeEvent();
         }
 
-        public void OnRouteAdded(string messageType, string handlerType, string endpoint, List<string> sites)
+        public IEnumerable<IEvent> OnRouteAdded(string messageType, string handlerType, string endpoint, List<string> sites)
         {
             if (!Entries.TryGetValue(messageType, out var routes))
             {
@@ -38,40 +71,53 @@ namespace ExactlyOnce.Routing.Controller.Model
                 policy = EndpointSiteRoutingPolicy.RouteToOldest;
             }
             routes.Add(new RoutingTableEntry(handlerType, endpoint, sites, policy));
+            return GenerateChangeEvent();
         }
 
-        public void OnRouteChanged(string messageType, string handlerType, string endpoint, List<string> sites)
+        public IEnumerable<IEvent> OnRouteChanged(string messageType, string handlerType, string endpoint, List<string> sites)
         {
             var existing = Entries[messageType].Single(e => e.Handler == handlerType && e.Endpoint == endpoint);
-
-            Entries[messageType].Remove(existing);
-            Entries[messageType].Add(new RoutingTableEntry(handlerType, endpoint, sites, existing.SiteRoutingPolicy));
+            existing.UpdateSites(sites);
+            return GenerateChangeEvent();
         }
 
-        public void OnRouteRemoved(string messageType, string handlerType, string endpoint)
+        public IEnumerable<IEvent> OnRouteRemoved(string messageType, string handlerType, string endpoint)
         {
             var existing = Entries[messageType].Single(e => e.Handler == handlerType && e.Endpoint == endpoint);
             Entries[messageType].Remove(existing);
+            return GenerateChangeEvent();
         }
 
-        public static RoutingTable Derive(RoutingData routingDataInformation, Topology topologyInformation)
+        public IEnumerable<IEvent> OnTopologyChanged(Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMap)
         {
-            var entries = routingDataInformation.MessageRouting
-                .ToDictionary(x => x.Key, x => ToRoutingEntry(x.Value, routingDataInformation));
-
-            return new RoutingTable(entries, topologyInformation.DestinationSiteToNextHopMap);
+            DestinationSiteToNextHopMapping = destinationSiteToNextHopMap;
+            return GenerateChangeEvent();
         }
 
-        static List<RoutingTableEntry> ToRoutingEntry(MessageRouting messageRouting, RoutingData routingDataInformation)
+        IEnumerable<IEvent> GenerateChangeEvent()
         {
-            return messageRouting.Destinations.Select(x =>
-            {
-                if (!routingDataInformation.EndpointSiteRoutingPolicy.TryGetValue(x.Endpoint, out var policy))
-                {
-                    policy = SiteRoutingPolicy.RouteToOldest;
-                }
-                return new RoutingTableEntry(x.Handler, x.Endpoint, x.Sites, policy);
-            }).ToList();
+            Version++;
+            yield return new RoutingTableChanged(Version, Entries, DestinationSiteToNextHopMapping);
+        }
+
+        public IEnumerable<IEvent> Handle(RouteAdded e)
+        {
+            return OnRouteAdded(e.MessageType, e.HandlerType, e.Endpoint, e.Sites);
+        }
+
+        public IEnumerable<IEvent> Handle(RouteRemoved e)
+        {
+            return OnRouteRemoved(e.MessageType, e.HandlerType, e.Endpoint);
+        }
+
+        public IEnumerable<IEvent> Handle(RouteChanged e)
+        {
+            return OnRouteChanged(e.MessageType, e.HandlerType, e.Endpoint, e.Sites);
+        }
+
+        public IEnumerable<IEvent> Handle(DestinationSiteToNextHopMapChanged e)
+        {
+            return OnTopologyChanged(e.DestinationSiteToNextHopMap);
         }
     }
 }

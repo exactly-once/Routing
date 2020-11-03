@@ -1,13 +1,13 @@
 ﻿using System;
-using ExactlyOnce.AzureFunctions.Sample;
+using ExactlyOnce.Routing.AzureController;
+using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 
 [assembly: WebJobsStartup(typeof(HostStartup))]
 
-namespace ExactlyOnce.AzureFunctions.Sample
+namespace ExactlyOnce.Routing.AzureController
 {
     public class HostStartup : IWebJobsStartup
     {

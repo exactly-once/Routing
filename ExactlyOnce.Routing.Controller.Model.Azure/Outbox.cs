@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ExactlyOnce.Routing.Controller.Model
+namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public class Outbox
     {
@@ -11,7 +11,12 @@ namespace ExactlyOnce.Routing.Controller.Model
             Sequences = sequences;
         }
 
-        public Event Stamp(string sourceId, string destinationId, object payload)
+        public Outbox()
+            : this(new Dictionary<string, long>())
+        {
+        }
+
+        public long Stamp(string destinationId)
         {
             if (!Sequences.TryGetValue(destinationId, out var sequence))
             {
@@ -21,7 +26,7 @@ namespace ExactlyOnce.Routing.Controller.Model
 
             Sequences[destinationId]++;
 
-            return new Event(sourceId, sequence, payload);
+            return sequence;
         }
     }
 }

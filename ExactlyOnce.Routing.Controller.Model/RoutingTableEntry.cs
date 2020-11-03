@@ -14,7 +14,17 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public string Endpoint { get; }
         public string Handler { get; }
-        public List<string> Sites { get; }
-        public EndpointSiteRoutingPolicy SiteRoutingPolicy { get; }
+        public List<string> Sites { get; private set; }
+        public EndpointSiteRoutingPolicy SiteRoutingPolicy { get; private set; }
+
+        public void UpdateSites(List<string> sites)
+        {
+            Sites = sites;
+        }
+
+        public void UpdateSiteRoutingPolicy(EndpointSiteRoutingPolicy policy)
+        {
+            SiteRoutingPolicy = policy;
+        }
     }
 }
