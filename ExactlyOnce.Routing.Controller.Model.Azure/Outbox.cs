@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public class Outbox
     {
-        Dictionary<string, long> Sequences;
+        public Dictionary<string, long> Sequences { get; set; }
 
+        [JsonConstructor]
         public Outbox(Dictionary<string, long> sequences)
         {
             Sequences = sequences;

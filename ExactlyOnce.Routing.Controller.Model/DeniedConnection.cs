@@ -1,7 +1,10 @@
-﻿namespace ExactlyOnce.Routing.Controller.Model
+﻿using Newtonsoft.Json;
+
+namespace ExactlyOnce.Routing.Controller.Model
 {
     public class DeniedConnection
     {
+        [JsonConstructor]
         public DeniedConnection(string sourceSite, string destinationSite, string router, int deniedByRule)
         {
             SourceSite = sourceSite;

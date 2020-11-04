@@ -3,11 +3,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Description;
 using Microsoft.Azure.WebJobs.Host.Bindings;
 using Microsoft.Azure.WebJobs.Host.Config;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Linq;
 
 namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
@@ -25,12 +27,12 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
         {
             var rule = context.AddBindingRule<ExactlyOnceAttribute>();
 
-            rule.BindToValueProvider(async (attribute, type) =>
+            rule.BindToValueProvider((attribute, type) =>
             {
                 var requestId = attribute.RequestId;
-                var stateId = attribute.StateId ?? attribute.RequestId;
+                var stateId = attribute.StateId;
 
-                return new ExactlyOnceValueBinder(requestId, stateId, type, factory);
+                return Task.FromResult<IValueBinder>(new ExactlyOnceValueBinder(requestId, stateId, type, factory));
             });
         }
     }
@@ -123,7 +125,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
         static ExactlyOnceConfiguration RegisterServices(this IServiceCollection services)
         {
             var outboxConfiguration = new OutboxConfiguration();
-            var configuration = new ExactlyOnceConfiguration(outboxConfiguration);
+            var subscriptions = new Subscriptions();
+            var configuration = new ExactlyOnceConfiguration(outboxConfiguration, subscriptions);
 
             services.AddLogging();
 
@@ -137,6 +140,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                 return new ExactlyOnceProcessor(outboxStore, stateStore);
             });
 
+            services.AddSingleton(sp => subscriptions);
+
             services.AddSingleton<OnceExecutorFactory>();
 
             return configuration;
@@ -145,13 +150,15 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
     public class ExactlyOnceConfiguration
     {
-        OutboxConfiguration outboxConfiguration;
+        readonly OutboxConfiguration outboxConfiguration;
+        readonly Subscriptions subscriptions;
 
         public Func<CosmosClient> CosmosClientFactory;
 
-        internal ExactlyOnceConfiguration(OutboxConfiguration outboxConfiguration)
+        internal ExactlyOnceConfiguration(OutboxConfiguration outboxConfiguration, Subscriptions subscriptions)
         {
             this.outboxConfiguration = outboxConfiguration;
+            this.subscriptions = subscriptions;
         }
 
         public ExactlyOnceConfiguration ConfigureOutbox(Action<OutboxConfiguration> configure)
@@ -159,6 +166,15 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             configure(outboxConfiguration);
 
             outboxConfiguration.Validate();
+
+            return this;
+        }
+
+        public ExactlyOnceConfiguration Subscribe<TState, TEvent>(Func<TEvent, string> selectDestinationCallback)
+            where TEvent : IEvent
+            where TState : State
+        {
+            subscriptions.Subscribe<TState, TEvent>(selectDestinationCallback);
 
             return this;
         }

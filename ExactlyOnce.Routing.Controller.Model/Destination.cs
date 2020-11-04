@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
     public class Destination
     {
+        [JsonConstructor]
         public Destination(string handler, string endpoint, DestinationState state, MessageKind messageKind, List<string> sites)
         {
             Handler = handler;

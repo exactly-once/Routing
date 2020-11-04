@@ -1,7 +1,10 @@
-﻿namespace ExactlyOnce.Routing.Controller.Model
+﻿using Newtonsoft.Json;
+
+namespace ExactlyOnce.Routing.Controller.Model
 {
     public class MessageHandlerRemoved : IEvent
     {
+        [JsonConstructor]
         public MessageHandlerRemoved(string handlerType, string handledMessageType, string endpoint, string site)
         {
             HandlerType = handlerType;

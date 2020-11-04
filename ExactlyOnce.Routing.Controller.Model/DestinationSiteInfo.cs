@@ -1,7 +1,10 @@
-﻿namespace ExactlyOnce.Routing.Controller.Model
+﻿using Newtonsoft.Json;
+
+namespace ExactlyOnce.Routing.Controller.Model
 {
     public class DestinationSiteInfo
     {
+        [JsonConstructor]
         public DestinationSiteInfo(string nextHopSite, int cost)
         {
             NextHopSite = nextHopSite;

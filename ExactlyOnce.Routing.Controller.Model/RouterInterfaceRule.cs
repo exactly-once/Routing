@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
@@ -13,6 +14,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         Lazy<Regex> sourceExpression;
         Lazy<Regex> destinationExpression;
 
+        [JsonConstructor]
         public RouterInterfaceRule(string router, string sourceInterfacePattern, string destinationInterfacePattern, RouterInterfaceRuleAction action)
         {
             Router = router;

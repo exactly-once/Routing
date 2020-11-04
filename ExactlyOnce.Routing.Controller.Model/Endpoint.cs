@@ -1,16 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
     public class Endpoint
     {
+        //Used by deserialization
+        [JsonConstructor]
         public Endpoint(string name, Dictionary<string, EndpointInstance> instances, Dictionary<string, MessageKind> recognizedMessages)
         {
             Name = name;
             Instances = instances;
             RecognizedMessages = recognizedMessages;
+        }
+
+        // Used by event loop
+        // ReSharper disable once UnusedMember.Global
+        public Endpoint()
+        {
         }
 
         public Endpoint(string name)
@@ -22,7 +31,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         public Dictionary<string, EndpointInstance> Instances { get; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; }
 
-        public IEnumerable<IEvent> OnEndpointHello(string instanceId, string site)
+        public IEnumerable<IEvent> OnHello(string instanceId, string site)
         {
             if (!Instances.TryGetValue(instanceId, out var instance))
             {
@@ -56,7 +65,7 @@ namespace ExactlyOnce.Routing.Controller.Model
                 .Concat(ComputeMessageHandlerChanges(site, handlersInDestinationSite, DeriveMessageHandlers(site)));
         }
 
-        public IEnumerable<IEvent> OnEndpointStartup(string instanceId, Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers)
+        public IEnumerable<IEvent> OnStartup(string instanceId, Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers)
         {
             List<string> affectedMessageTypes;
             if (!Instances.TryGetValue(instanceId, out var instance))
@@ -178,7 +187,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
             foreach (var addedHandler in newHandlers.Except(oldHandlers, MessageHandlerInstance.NameHandledMessageComparer))
             {
-                yield return new MessageHandlerAdded(addedHandler.Name, addedHandler.HandledMessage, Name, site);
+                yield return new MessageHandlerAdded(addedHandler.Name, addedHandler.HandledMessage, RecognizedMessages[addedHandler.HandledMessage], Name, site);
             }
 
             foreach (var removedHandler in oldHandlers.Except(newHandlers, MessageHandlerInstance.NameHandledMessageComparer))

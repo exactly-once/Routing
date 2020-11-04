@@ -1,4 +1,6 @@
-﻿namespace ExactlyOnce.Routing.Controller.Model.Azure
+﻿using Newtonsoft.Json;
+
+namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public class EventMessage
     {
@@ -14,6 +16,8 @@
         }
 
         public string UniqueId { get; }
+
+        [JsonProperty(TypeNameHandling = TypeNameHandling.Auto)]
         public IEvent Payload { get; }
         public long? Sequence { get; }
         public string DestinationId { get; }

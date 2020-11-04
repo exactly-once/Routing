@@ -30,10 +30,7 @@ namespace ExactlyOnce.Routing.Tests
         [Test]
         public void Can_dismiss_command_handler()
         {
-            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>
-            {
-                new Destination("MyMessageHandler", "Receiver", DestinationState.Active, MessageKind.Command, new List<string> {"SiteA"})
-            });
+            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>());
 
             var events = messageRouting.Dismiss("MyMessageHandler", "Receiver").ToArray();
 
@@ -47,11 +44,7 @@ namespace ExactlyOnce.Routing.Tests
         [Test]
         public void Appointing_command_handler_dismisses_previous_handler()
         {
-            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>
-            {
-                new Destination("MyMessageHandler", "Receiver", DestinationState.Active, MessageKind.Command, new List<string> {"SiteA"}),
-                new Destination("AnotherMessageHandler", "Receiver", DestinationState.Inactive, MessageKind.Command, new List<string> {"SiteA"})
-            });
+            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>());
 
             var events = messageRouting.Appoint("AnotherMessageHandler", "Receiver").ToArray();
 
@@ -71,11 +64,7 @@ namespace ExactlyOnce.Routing.Tests
         [Test]
         public void Appointing_command_handler_dismisses_same_handler_in_different_endpoint()
         {
-            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>
-            {
-                new Destination("MyMessageHandler", "Receiver", DestinationState.Active, MessageKind.Command, new List<string> {"SiteA"}),
-                new Destination("MyMessageHandler", "NewReceiver", DestinationState.Inactive, MessageKind.Command, new List<string> {"SiteA"})
-            });
+            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>());
 
             var events = messageRouting.Appoint("MyMessageHandler", "NewReceiver").ToArray();
 
@@ -95,11 +84,7 @@ namespace ExactlyOnce.Routing.Tests
         [Test]
         public void Subscribing_event_handler_unsubscribes_same_handler_in_different_endpoint()
         {
-            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>
-            {
-                new Destination("MyMessageHandler", "Receiver", DestinationState.Active, MessageKind.Event, new List<string> {"SiteA"}),
-                new Destination("MyMessageHandler", "NewReceiver", DestinationState.Inactive, MessageKind.Event, new List<string> {"SiteA"})
-            });
+            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>());
 
             var events = messageRouting.Subscribe("MyMessageHandler", "NewReceiver").ToArray();
 
@@ -119,11 +104,7 @@ namespace ExactlyOnce.Routing.Tests
         [Test]
         public void Subscribing_event_handler_does_not_unsubscribe_other_handlers()
         {
-            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>
-            {
-                new Destination("MyMessageHandler", "Sub1", DestinationState.Active, MessageKind.Event, new List<string> {"SiteA"}),
-                new Destination("AnotherMessageHandler", "Sub2", DestinationState.Inactive, MessageKind.Event, new List<string> {"SiteA"})
-            });
+            var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>());
 
             var events = messageRouting.Subscribe("AnotherMessageHandler", "Sub2").ToArray();
 

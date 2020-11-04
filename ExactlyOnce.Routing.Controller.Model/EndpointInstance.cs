@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
     public class EndpointInstance
     {
+        [JsonConstructor]
         public EndpointInstance(string instanceId, List<MessageHandlerInstance> messageHandlers, Dictionary<string, MessageKind> recognizedMessages, string site)
         {
             InstanceId = instanceId;

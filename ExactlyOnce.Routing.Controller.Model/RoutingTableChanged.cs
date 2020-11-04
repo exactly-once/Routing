@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
     public class RoutingTableChanged : IEvent
     {
+        [JsonConstructor]
         public RoutingTableChanged(int version, Dictionary<string, List<RoutingTableEntry>> entries, Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping)
         {
             Version = version;

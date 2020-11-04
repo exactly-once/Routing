@@ -6,13 +6,13 @@ using System.Threading.Tasks;
 namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public interface IOnceExecutor<TState, TEntity> 
-        where TState : EventDrivenState<TEntity>
+        where TState : State<TEntity>
     {
-        Task<EventMessage[]> Once(Func<TEntity, IEnumerable<IEvent>> action);
+        Task<EventMessage[]> Once(Func<TEntity, IEnumerable<IEvent>> action, Func<TEntity> constructor);
     }
 
     class OnceExecutor<TState, TEntity> : IOnceExecutor<TState, TEntity>
-        where TState : EventDrivenState<TEntity>
+        where TState : State<TEntity>
     {
         readonly ExactlyOnceProcessor processor;
         readonly Subscriptions subscriptions;
@@ -27,7 +27,9 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             this.stateId = stateId;
         }
 
-        public async Task<EventMessage[]> Once(Func<TEntity, IEnumerable<IEvent>> action)
+        public async Task<EventMessage[]> Once(
+            Func<TEntity, IEnumerable<IEvent>> action,
+            Func<TEntity> constructor)
         {
             var maxDelay = TimeSpan.FromSeconds(20);
             var delay = TimeSpan.FromMilliseconds(500);
@@ -38,12 +40,16 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                 {
                     var operationId = $"{typeof(TState).Name}-{stateId}-{requestId}";
 
-                    await processor.Process(operationId, stateId, typeof(TState), state =>
+                    var entityKey = DeterministicGuid.MakeId(stateId).ToString();
+
+                    var result = await processor.Process(operationId, entityKey, typeof(TState), state =>
                     {
-                        var eventDrivenState = (EventDrivenState<TEntity>) state;
-                        var result = eventDrivenState.Invoke(action, subscriptions).ToArray();
-                        return result;
+                        var eventDrivenState = (State<TEntity>) state;
+                        var events = eventDrivenState.Invoke(action, constructor, subscriptions).ToArray();
+                        return events;
                     });
+
+                    return result;
                 }
                 catch (OptimisticConcurrencyFailure)
                 {
@@ -54,7 +60,6 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             } while (delay <= maxDelay);
 
             throw new OptimisticConcurrencyFailure();
-
         }
     }
 }

@@ -12,7 +12,10 @@ namespace ExactlyOnce.Routing.Tests
         [Test]
         public void Can_invoke_handler_method()
         {
-            var state = new MyEventDrivenState(new Inbox(), new Outbox(), new HandlerObject());
+            var state = new MyEventDrivenState
+            {
+                Data = new HandlerObject()
+            };
 
             var subs = new Subscriptions();
             subs.Subscribe<MyEventDrivenState, FollowUpEvent>(x => "ID");
@@ -24,15 +27,8 @@ namespace ExactlyOnce.Routing.Tests
             Assert.IsNotNull(followUpPayload);
         }
 
-        public class MyEventDrivenState : EventDrivenState
+        public class MyEventDrivenState : State<HandlerObject>
         {
-            public MyEventDrivenState(Inbox inbox, Outbox outbox, HandlerObject eventHandler) 
-                : base(inbox, outbox, eventHandler)
-            {
-                Handler = eventHandler;
-            }
-
-            public HandlerObject Handler { get; }
         }
 
         public class HandlerObject : IEventHandler<MyEvent>

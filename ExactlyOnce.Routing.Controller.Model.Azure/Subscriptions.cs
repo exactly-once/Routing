@@ -10,7 +10,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
         public void Subscribe<TState, TEvent>(Func<TEvent, string> selectDestinationCallback) 
             where TEvent : IEvent
-            where TState : EventDrivenState
+            where TState : State
         {
             if (!subscriptions.TryGetValue(typeof(TEvent), out var subs))
             {
@@ -21,12 +21,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             subs.Add(new Subscription(typeof(TState), e => selectDestinationCallback((TEvent)e)));
         }
 
-        public IEnumerable<EventMessage> ToMessages(IEnumerable<IEvent> events, Outbox outbox)
-        {
-            return events.SelectMany(e => ToMessages(e, null, outbox));
-        }
-
-        public IEnumerable<EventMessage> ToMessages(IEnumerable<IEvent> events, EventDrivenState sourceEntity)
+        public IEnumerable<EventMessage> ToMessages(IEnumerable<IEvent> events, State sourceEntity)
         {
             var source = $"{sourceEntity.GetType().Name}-{sourceEntity.Id}";
             return events.SelectMany(e => ToMessages(e, source, sourceEntity.Outbox));
@@ -36,20 +31,22 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
         {
             if (!subscriptions.TryGetValue(e.GetType(), out var subs))
             {
-                throw new Exception($"No function subscribes to {e.GetType()}");
+                return Enumerable.Empty<EventMessage>();
+                //TODO Uncomment this line when we have all subscription set up
+                //throw new Exception($"No function subscribes to {e.GetType()}");
             }
 
-            return subs.Select(s =>
+            return subs.Select(sub =>
             {
-                var destinationId = s.SelectDestinationCallback(e);
-                var destination = $"{s.EntityType.Name}-{destinationId}";
+                var destinationId = sub.SelectDestinationCallback(e);
+                var destination = $"{sub.EntityType.Name}-{destinationId}";
 
                 long? sequence;
                 string uniqueId;
                 if (source != null)
                 {
                     sequence = outbox.Stamp(destination);
-                    uniqueId = $"{source}-{destination}-{sequence}";
+                    uniqueId = $"{source}-{sequence}";
                 }
                 else
                 {
@@ -57,7 +54,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                     uniqueId = Guid.NewGuid().ToString(); //no deduplication possible
                 }
 
-                return new EventMessage(uniqueId, source, sequence, destinationId, s.EntityType.FullName, e);
+                return new EventMessage(uniqueId, source, sequence, destinationId, sub.EntityType.FullName, e);
             });
         }
 

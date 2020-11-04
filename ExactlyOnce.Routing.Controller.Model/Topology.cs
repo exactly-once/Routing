@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
     public class Topology : IEventHandler<RouterInterfacesChanged>, IEventHandler<RouterAdded>
     {
+        [JsonConstructor]
         public Topology(Dictionary<string, RouterInfo> routers, List<RouterInterfaceRule> rules)
         {
             Routers = routers;

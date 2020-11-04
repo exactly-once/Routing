@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
@@ -26,6 +27,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
         }
 
+        [JsonConstructor]
         public RoutingTable(
             Dictionary<string, List<RoutingTableEntry>> entries, 
             Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping, 

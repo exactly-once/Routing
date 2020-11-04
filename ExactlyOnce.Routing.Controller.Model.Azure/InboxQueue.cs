@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public class InboxQueue
     {
+        [JsonConstructor]
         public InboxQueue(List<EventMessage> queue, long lastProcessed)
         {
             Queue = queue;

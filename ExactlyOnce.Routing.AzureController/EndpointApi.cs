@@ -1,10 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Newtonsoft.Json;
+using Endpoint = ExactlyOnce.Routing.Controller.Model.Endpoint;
 
 namespace ExactlyOnce.Routing.AzureController
 {
@@ -12,12 +16,19 @@ namespace ExactlyOnce.Routing.AzureController
     {
         [FunctionName(nameof(ProcessEndpointReport))]
         public async Task<IActionResult> ProcessEndpointReport(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] EndpointReportRequest endpointReport,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post")] EndpointReportRequest request,
             [ExactlyOnce(requestId: "{reportId}", stateId: "{endpointName}")] IOnceExecutor<EndpointState, Endpoint> execute,
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
-            var messages = await execute.Once(x => x.OnEndpointStartup(endpointReport.InstanceId,
-                endpointReport.RecognizedMessages, endpointReport.MessageHandlers));
+            var messageHandlers = request.MessageHandlers != null 
+                ? request.MessageHandlers.Select(kvp => new MessageHandlerInstance(kvp.Key, kvp.Value)).ToList() 
+                : new List<MessageHandlerInstance>();
+            
+            var messageKinds = request.RecognizedMessages ?? new Dictionary<string, MessageKind>();
+
+            var messages = await execute.Once(
+                e => e.OnStartup(request.InstanceId, messageKinds, messageHandlers),
+                () => new Endpoint(request.EndpointName));
 
             foreach (var eventMessage in messages)
             {
@@ -33,7 +44,9 @@ namespace ExactlyOnce.Routing.AzureController
             [ExactlyOnce(requestId: "{reportId}", stateId: "{endpointName}")] IOnceExecutor<EndpointState, Endpoint> execute,
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
-            var messages = await execute.Once(x => x.OnEndpointHello(helloRequest.InstanceId, helloRequest.Site));
+            var messages = await execute.Once(
+                e => e.OnHello(helloRequest.InstanceId, helloRequest.Site),
+                () => new Endpoint(helloRequest.EndpointName));
 
             foreach (var eventMessage in messages)
             {
@@ -48,7 +61,7 @@ namespace ExactlyOnce.Routing.AzureController
             public string ReportId { get; set; }
             public string EndpointName { get; set; }
             public string InstanceId { get; set; }
-            public List<MessageHandlerInstance> MessageHandlers { get; set; }
+            public Dictionary<string, string> MessageHandlers { get; set; }
             public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
         }
 

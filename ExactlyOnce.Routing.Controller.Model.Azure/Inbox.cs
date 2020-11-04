@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
@@ -7,6 +8,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     {
         public Dictionary<string, InboxQueue> EventQueues;
 
+        [JsonConstructor]
         public Inbox(Dictionary<string, InboxQueue> eventQueues)
         {
             EventQueues = eventQueues;

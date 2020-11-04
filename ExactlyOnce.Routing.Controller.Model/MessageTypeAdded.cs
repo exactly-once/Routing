@@ -1,7 +1,10 @@
-﻿namespace ExactlyOnce.Routing.Controller.Model
+﻿using Newtonsoft.Json;
+
+namespace ExactlyOnce.Routing.Controller.Model
 {
     public class MessageTypeAdded : IEvent
     {
+        [JsonConstructor]
         public MessageTypeAdded(string fullName, MessageKind kind, string endpoint)
         {
             FullName = fullName;

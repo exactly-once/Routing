@@ -1,8 +1,8 @@
-﻿namespace ExactlyOnce.Routing.Controller.Model
+﻿namespace TestClient
 {
-    public class EndpointInstanceHelloReport
+    public class EndpointHelloRequest
     {
-        public string UniqueId { get; set; }
+        public string ReportId { get; set; }
         public string EndpointName { get; set; }
         public string InstanceId { get; set; }
         public string Site { get; set; }

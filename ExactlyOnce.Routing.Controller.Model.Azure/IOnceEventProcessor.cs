@@ -29,19 +29,18 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             var maxDelay = TimeSpan.FromSeconds(20);
             var delay = TimeSpan.FromMilliseconds(500);
 
-            var stateType = typeof(OnceEventProcessor).Assembly.GetType(eventMessage.DestinationType, true); 
+            var destinationType = typeof(OnceEventProcessor).Assembly.GetType(eventMessage.DestinationType, true);
 
             do
             {
                 try
                 {
-                    var operationId = $"{stateType.Name}-{stateId}-{requestId}";
-
-                    return await processor.Process(operationId, stateId, stateType, state =>
+                    var operationId = $"{destinationType.Name}-{stateId}-{requestId}";
+                    return await processor.Process(operationId, stateId, destinationType, state =>
                     {
-                        var eventDrivenState = (EventDrivenState) state;
-                        var result = eventDrivenState.OnEvent(eventMessage, subscriptions).ToArray();
-                        return result;
+                        var eventDrivenState = (State)state;
+                        var events = eventDrivenState.OnEvent(eventMessage, subscriptions).ToArray();
+                        return events;
                     });
                 }
                 catch (OptimisticConcurrencyFailure)

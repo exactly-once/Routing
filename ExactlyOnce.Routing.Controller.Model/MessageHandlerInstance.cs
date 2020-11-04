@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
     public class MessageHandlerInstance
     {
+        [JsonConstructor]
         public MessageHandlerInstance(string name, string handledMessage)
         {
             Name = name;

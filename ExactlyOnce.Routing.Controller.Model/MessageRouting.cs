@@ -1,72 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    /*
-     * Endpoint -> MessageRouting -> RoutingTable
-     * Endpoint -> MessagesViewModel
-     * Router -> Topology -> RoutingTable
-     */
-
-    public class RouteAdded : IEvent
-    {
-        public RouteAdded(string messageType, string handlerType, string endpoint, List<string> sites)
-        {
-            MessageType = messageType;
-            HandlerType = handlerType;
-            Endpoint = endpoint;
-            Sites = sites;
-        }
-
-        public string MessageType { get; }
-        public string HandlerType { get; }
-        public string Endpoint { get; }
-        public List<string> Sites { get; }
-    }
-
-    public class RouteChanged : IEvent
-    {
-        public RouteChanged(string messageType, string handlerType, string endpoint, List<string> sites)
-        {
-            MessageType = messageType;
-            HandlerType = handlerType;
-            Endpoint = endpoint;
-            Sites = sites;
-        }
-
-        public string MessageType { get; }
-        public string HandlerType { get; }
-        public string Endpoint { get; }
-        public List<string> Sites { get; }
-    }
-
-    public class RouteRemoved : IEvent
-    {
-        public RouteRemoved(string messageType, string handlerType, string endpoint)
-        {
-            MessageType = messageType;
-            HandlerType = handlerType;
-            Endpoint = endpoint;
-        }
-
-        public string MessageType { get; }
-        public string HandlerType { get; }
-        public string Endpoint { get; }
-    }
-
     public class MessageRouting : IEventHandler<MessageHandlerAdded>,
         IEventHandler<MessageHandlerRemoved>,
-        IEventHandler<MessageKindChanged>
+        IEventHandler<MessageKindChanged>,
+        IEventHandler<MessageTypeAdded>
     {
+        [JsonConstructor]
         public MessageRouting(string messageType, List<Destination> destinations)
         {
             MessageType = messageType;
             Destinations = destinations;
         }
 
-        public string MessageType { get; }
+        public MessageRouting()
+        {
+        }
+
+        public string MessageType { get; private set; }
         public List<Destination> Destinations { get; }
 
         public IEnumerable<IEvent> Subscribe(string handlerType, string endpoint)
@@ -210,14 +165,6 @@ namespace ExactlyOnce.Routing.Controller.Model
             yield return new RouteRemoved(MessageType, handler.Handler, handler.Endpoint);
         }
 
-        public void MessageKindChanged(string endpoint, MessageKind messageKind)
-        {
-            foreach (var destination in Destinations.Where(x => x.Endpoint == endpoint))
-            {
-                destination.MessageKindChanged(messageKind);
-            }
-        }
-
         public IEnumerable<IEvent> HandlerAdded(string handlerType, string handlerSite, string endpoint, MessageKind messageKind)
         {
             var destination = Destinations.FirstOrDefault(x => x.Handler == handlerType && x.Endpoint == endpoint);
@@ -271,7 +218,7 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public IEnumerable<IEvent> Handle(MessageHandlerAdded e)
         {
-            return HandlerAdded(e.HandlerType, e.Site, e.Endpoint, MessageKind.Undefined /*TODO WHY?*/);
+            return HandlerAdded(e.HandlerType, e.Site, e.Endpoint, e.MessageKind);
         }
 
         public IEnumerable<IEvent> Handle(MessageHandlerRemoved e)
@@ -281,7 +228,18 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public IEnumerable<IEvent> Handle(MessageKindChanged e)
         {
-            MessageKindChanged(e.Endpoint, e.NewKind);
+            foreach (var destination in Destinations.Where(x => x.Endpoint == e.Endpoint))
+            {
+                destination.MessageKindChanged(e.NewKind);
+            }
+
+            return Enumerable.Empty<IEvent>();
+        }
+
+        public IEnumerable<IEvent> Handle(MessageTypeAdded e)
+        {
+            MessageType = e.FullName;
+
             return Enumerable.Empty<IEvent>();
         }
     }

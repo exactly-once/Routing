@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
@@ -11,6 +12,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
         }
 
+        [JsonConstructor]
         public Router(string name, Dictionary<string, RouterInstance> instances, List<string> interfacesToSites)
         {
             Name = name;
@@ -22,7 +24,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         public List<string> InterfacesToSites { get; private set; }
         public Dictionary<string, RouterInstance> Instances { get;  }
 
-        public IEnumerable<IEvent> OnRouterStartup(string instanceId, List<string> siteInterfaces)
+        public IEnumerable<IEvent> OnStartup(string instanceId, List<string> siteInterfaces)
         {
             var newRouter = !Instances.Any();
             var newInstance = new RouterInstance(instanceId, siteInterfaces);

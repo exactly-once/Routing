@@ -2,14 +2,7 @@
 
 namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
-    public class TopologyState : EventDrivenState
+    public class TopologyState : State<Topology>
     {
-        public TopologyState(Inbox inbox, Outbox outbox, Topology topology) 
-            : base(inbox, outbox, topology)
-        {
-            Topology = topology;
-        }
-
-        public Topology Topology { get; }
     }
 }

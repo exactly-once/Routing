@@ -11,6 +11,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     public class CosmosDbStateStore : IStateStore
     {
         Database database;
+        JsonSerializer serializer = new JsonSerializer();
 
         public CosmosDbStateStore(CosmosClient cosmosClient, string databaseId)
         {
@@ -29,7 +30,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                var newState = (State) Activator.CreateInstance(stateType, stateId);
+                var newState = (State)Activator.CreateInstance(stateType);
+                newState.Id = stateId;
                 return (newState, (string)null);
             }
 
@@ -41,7 +43,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             using var streamReader = new StreamReader(response.Content);
 
             var content = await streamReader.ReadToEndAsync()
-                .ConfigureAwait(false);;
+                .ConfigureAwait(false); ;
 
             var state = (State)JsonConvert.DeserializeObject(content, stateType);
 
@@ -57,17 +59,32 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
             try
             {
-                var response = await container.UpsertItemAsync(
-                        value,
-                        requestOptions: new ItemRequestOptions
-                        {
-                            IfMatchEtag = version,
-                        }, cancellationToken: cancellationToken)
-                    .ConfigureAwait(false);
+                await using (var payloadStream = new MemoryStream())
+                await using (var streamWriter = new StreamWriter(payloadStream))
+                {
+                    serializer.Serialize(streamWriter, value);
+                    await streamWriter.FlushAsync();
+                    payloadStream.Seek(0, SeekOrigin.Begin);
 
-                return response.Headers.ETag;
+                    var response = await container.UpsertItemStreamAsync(
+                            payloadStream,
+                            new PartitionKey(stateId),
+                            requestOptions: new ItemRequestOptions
+                            {
+                                IfMatchEtag = version,
+                            }, cancellationToken: cancellationToken)
+                        .ConfigureAwait(false);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new Exception(response.ErrorMessage);
+                    }
+
+                    return response.Headers.ETag;
+                }
+
             }
-            catch (CosmosException e) when (e.StatusCode == HttpStatusCode.PreconditionFailed || 
+            catch (CosmosException e) when (e.StatusCode == HttpStatusCode.PreconditionFailed ||
                                             e.StatusCode == HttpStatusCode.Conflict)
             {
                 throw new OptimisticConcurrencyFailure();

@@ -16,7 +16,9 @@ namespace ExactlyOnce.Routing.AzureController
             [ExactlyOnce(requestId: "{reportId}", stateId: "{routerName}")] IOnceExecutor<RouterState, Router> execute,
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
-            var messages = await execute.Once(x => x.OnRouterStartup(routerReport.InstanceId, routerReport.SiteInterfaces));
+            var messages = await execute.Once(
+                r => r.OnStartup(routerReport.InstanceId, routerReport.SiteInterfaces),
+                () => new Router(routerReport.RouterName));
 
             foreach (var eventMessage in messages)
             {

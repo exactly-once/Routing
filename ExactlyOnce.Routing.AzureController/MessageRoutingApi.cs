@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,9 @@ namespace ExactlyOnce.Routing.AzureController
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
 
-            var messages = await execute.Once(x => x.Subscribe(request.HandlerType, request.Endpoint));
+            var messages = await execute.Once(
+                x => x.Subscribe(request.HandlerType, request.Endpoint),
+                () => throw new Exception($"Message type not recognized {request.MessageType}"));
             foreach (var eventMessage in messages)
             {
                 eventCollector.Add(eventMessage);
@@ -32,7 +35,9 @@ namespace ExactlyOnce.Routing.AzureController
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
 
-            var messages = await execute.Once(x => x.Unsubscribe(request.HandlerType, request.Endpoint));
+            var messages = await execute.Once(
+                x => x.Unsubscribe(request.HandlerType, request.Endpoint),
+                () => throw new Exception($"Message type not recognized {request.MessageType}"));
             foreach (var eventMessage in messages)
             {
                 eventCollector.Add(eventMessage);
@@ -48,7 +53,9 @@ namespace ExactlyOnce.Routing.AzureController
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
 
-            var messages = await execute.Once(x => x.Appoint(request.HandlerType, request.Endpoint));
+            var messages = await execute.Once(
+                x => x.Appoint(request.HandlerType, request.Endpoint),
+                () => throw new Exception($"Message type not recognized {request.MessageType}"));
             foreach (var eventMessage in messages)
             {
                 eventCollector.Add(eventMessage);
@@ -64,7 +71,9 @@ namespace ExactlyOnce.Routing.AzureController
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
 
-            var messages = await execute.Once(x => x.Dismiss(request.HandlerType, request.Endpoint));
+            var messages = await execute.Once(
+                x => x.Dismiss(request.HandlerType, request.Endpoint),
+                () => throw new Exception($"Message type not recognized {request.MessageType}"));
             foreach (var eventMessage in messages)
             {
                 eventCollector.Add(eventMessage);

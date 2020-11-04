@@ -12,7 +12,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
         }
 
         public IOnceExecutor<TState, TEntity> CreateGenericExecutor<TState, TEntity>(string requestId, string stateId) 
-            where TState : EventDrivenState<TEntity>
+            where TState : State<TEntity>
+            where TEntity : new()
         {
             return new OnceExecutor<TState, TEntity>(processor, subscriptions, requestId, stateId);
         }
