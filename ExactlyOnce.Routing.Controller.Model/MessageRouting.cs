@@ -14,11 +14,12 @@ namespace ExactlyOnce.Routing.Controller.Model
         public MessageRouting(string messageType, List<Destination> destinations)
         {
             MessageType = messageType;
-            Destinations = destinations;
+            Destinations = destinations ?? new List<Destination>();
         }
 
         public MessageRouting()
         {
+            Destinations = new List<Destination>();
         }
 
         public string MessageType { get; private set; }

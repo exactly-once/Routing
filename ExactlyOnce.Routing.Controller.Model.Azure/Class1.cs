@@ -11,13 +11,12 @@
 //using Microsoft.Azure.WebJobs.Host.Bindings;
 //using Microsoft.Azure.WebJobs.Host.Config;
 //using Microsoft.Azure.WebJobs.Host.Protocols;
-//using Microsoft.Azure.WebJobs.Host.Queues.Triggers;
 //using Microsoft.Azure.Storage.Queue;
 //using Newtonsoft.Json.Linq;
 
 //namespace Microsoft.Azure.WebJobs.Host.Queues.Config
 //{
-//    [Extension("AzureStorageQueues", "Queues")]
+//    [Extension("AzureStorageQueuesExt")]
 //    internal class QueuesExtensionConfigProvider : IExtensionConfigProvider
 //    {
 //        private readonly StorageAccountProvider _storageAccountProvider;

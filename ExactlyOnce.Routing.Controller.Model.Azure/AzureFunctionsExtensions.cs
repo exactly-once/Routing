@@ -172,7 +172,6 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
         public ExactlyOnceConfiguration Subscribe<TState, TEvent>(Func<TEvent, string> selectDestinationCallback)
             where TEvent : IEvent
-            where TState : State
         {
             subscriptions.Subscribe<TState, TEvent>(selectDestinationCallback);
 

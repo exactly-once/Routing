@@ -27,6 +27,12 @@ namespace ExactlyOnce.Routing.AzureController
                 c.Subscribe<MessageRoutingState, MessageHandlerRemoved>(e => e.HandledMessageType);
                 c.Subscribe<MessageRoutingState, MessageTypeAdded>(e => e.FullName);
                 c.Subscribe<MessageRoutingState, MessageKindChanged>(e => e.FullName);
+                c.Subscribe<RoutingTableState, RouteAdded>(e => "Instance");
+                c.Subscribe<RoutingTableState, RouteRemoved>(e => "Instance");
+                c.Subscribe<RoutingTableState, RouteChanged>(e => "Instance");
+
+                c.Subscribe<NotificationApi, RoutingTableChanged>(e => "");
+                c.Subscribe<NotificationApi, MessageTypeAdded>(e => "");
 
                 c.UseCosmosClient(() =>
                 {

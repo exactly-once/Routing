@@ -3,12 +3,15 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 
 namespace TestClient
 {
     class Program
     {
+        static HubConnection connection;
+
         static async Task Main(string[] args)
         {
             var client = new HttpClient
@@ -22,9 +25,38 @@ namespace TestClient
                     (ct, args) => EndpointStartup(args, client)),
                 ("h|Send endpoint hello. Syntax: h <report id> <name> <instance> <site>",
                     (ct, args) => EndpointHello(args, client)),
+                ("c|Connect to notification service",
+                    (ct, args) => Connect(args)),
+                ("d|Disconnect from notification service",
+                    (ct, args) => Disconnect(args)),
             };
 
+            
+
             await Run(commands);
+        }
+
+        static async Task Disconnect(string[] args)
+        {
+            if (connection != null)
+            {
+                await connection.StopAsync();
+                connection = null;
+            }
+        }
+
+        static Task Connect(string[] args)
+        {
+            if (connection != null)
+            {
+                return Task.CompletedTask;
+            }
+            connection = new HubConnectionBuilder().WithUrl("http://localhost:7071/api").Build();
+            connection.On<string>("newMessage", x =>
+            {
+                Console.WriteLine(x);
+            });
+            return connection.StartAsync(CancellationToken.None);
         }
 
         static async Task EndpointHello(string[] args, HttpClient httpClient)

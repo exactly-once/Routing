@@ -18,6 +18,7 @@ namespace ExactlyOnce.Routing.AzureController
         public async Task<IActionResult> ProcessEndpointReport(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] EndpointReportRequest request,
             [ExactlyOnce(requestId: "{reportId}", stateId: "{endpointName}")] IOnceExecutor<EndpointState, Endpoint> execute,
+            [Queue("signalr")] ICollector<EventMessage> signalrCollector,
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
             var messageHandlers = request.MessageHandlers != null 
@@ -30,9 +31,16 @@ namespace ExactlyOnce.Routing.AzureController
                 e => e.OnStartup(request.InstanceId, messageKinds, messageHandlers),
                 () => new Endpoint(request.EndpointName));
 
-            foreach (var eventMessage in messages)
+            foreach (var message in messages)
             {
-                eventCollector.Add(eventMessage);
+                if (message.DestinationType == typeof(NotificationApi).FullName) //HACK
+                {
+                    signalrCollector.Add(message);
+                }
+                else
+                {
+                    eventCollector.Add(message);
+                }
             }
 
             return new OkResult();

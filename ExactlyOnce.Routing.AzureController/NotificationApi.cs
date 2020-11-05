@@ -5,21 +5,22 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.AzureController
 {
     public class NotificationApi
     {
-        [FunctionName(nameof(PublishRouteTable))]
-        public async Task PublishRouteTable(
-            [QueueTrigger("routing-updates")] EventMessage eventMessage,
+        [FunctionName(nameof(Publish))]
+        public async Task Publish(
+            [QueueTrigger("signalr")] EventMessage eventMessage,
             [SignalR(HubName = "RoutingController")] IAsyncCollector<SignalRMessage> signalRMessages,
             ILogger log)
         {
-
             await signalRMessages.AddAsync(new SignalRMessage
             {
-                //TODO
+                Target = "newMessage",
+                Arguments = new[] { JsonConvert.SerializeObject(eventMessage.Payload) }
             });
         }
 
