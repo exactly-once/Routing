@@ -1,9 +1,11 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Endpoint.Model
 {
     public class RoutingTableEntry
     {
+        [JsonConstructor]
         public RoutingTableEntry(string handler, string endpoint, List<string> sites, EndpointSiteRoutingPolicy siteRoutingPolicy)
         {
             Handler = handler;

@@ -127,19 +127,19 @@ namespace ExactlyOnce.Routing.Controller.Model
                 .ToDictionary(x => x.dest, x => x.info);
 
             //Add zero cost route to itself
-            result[source] = new DestinationSiteInfo(null, 0);
+            result[source] = new DestinationSiteInfo(null, null, 0);
             return result;
         }
 
-        static DestinationSiteInfo BuildDestinationSiteToNextHopMap(List<Connection> allowedConnections, string source,
-            string dest)
+        static DestinationSiteInfo BuildDestinationSiteToNextHopMap(List<Connection> allowedConnections, string sourceSite,
+            string destinationSite)
         {
             var bestConnection = allowedConnections
-                .Where(c => c.SourceSite == source)
-                .Select(c => new {c.DestinationSite, cost = CanReach(allowedConnections, dest, c.DestinationSite)})
+                .Where(c => c.SourceSite == sourceSite)
+                .Select(c => new {c.DestinationSite, c.Router, cost = CanReach(allowedConnections, destinationSite, c.DestinationSite)})
                 .Where(x => x.cost.HasValue)
                 .OrderBy(x => x.cost.Value)
-                .Select(x => new DestinationSiteInfo(x.DestinationSite, x.cost.Value))
+                .Select(x => new DestinationSiteInfo(x.DestinationSite, x.Router, x.cost.Value))
                 .FirstOrDefault();
 
             //Can be null

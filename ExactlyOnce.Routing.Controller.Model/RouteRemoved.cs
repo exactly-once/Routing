@@ -2,7 +2,7 @@
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    public class RouteRemoved : IEvent
+    public class RouteRemoved
     {
         [JsonConstructor]
         public RouteRemoved(string messageType, string handlerType, string endpoint)

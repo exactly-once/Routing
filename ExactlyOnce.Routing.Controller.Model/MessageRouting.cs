@@ -48,17 +48,22 @@ namespace ExactlyOnce.Routing.Controller.Model
                 throw new Exception($"Cannot subscribe {handlerType} at {endpoint} to {MessageType} because this message type is considered a command by the handler.");
             }
 
+            var removed = new List<RouteRemoved>();
+            var added = new List<RouteAdded>();
+
             //If a given handler is already subscribed in another endpoint, unsubscribe the other handler and subscribe this one
             //This is equivalent of moving the handler from one endpoint to another
             var subscriberInAnotherEndpoint = Destinations.SingleOrDefault(x => x.State != DestinationState.Inactive && x.Handler == handlerType && x.Endpoint != endpoint);
             if (subscriberInAnotherEndpoint != null)
             {
                 DeactivateOrRemove(subscriberInAnotherEndpoint);
-                yield return new RouteRemoved(MessageType, subscriberInAnotherEndpoint.Handler, subscriberInAnotherEndpoint.Endpoint);
+                removed.Add(new RouteRemoved(MessageType, subscriberInAnotherEndpoint.Handler, subscriberInAnotherEndpoint.Endpoint));
             }
 
             subscriber.Activate();
-            yield return new RouteAdded(MessageType, subscriber.Handler, subscriber.Endpoint, subscriber.Sites);
+            added.Add(new RouteAdded(MessageType, subscriber.Handler, subscriber.Endpoint, subscriber.Sites));
+
+            yield return new MessageRoutingChanged(added, removed);
         }
 
         void DeactivateOrRemove(Destination destination)
@@ -92,8 +97,13 @@ namespace ExactlyOnce.Routing.Controller.Model
                 throw new Exception($"Cannot subscribe {handlerType} at {endpoint} from {MessageType} because this message type is considered a command by the handler.");
             }
 
+            
             DeactivateOrRemove(subscriber);
-            yield return new RouteRemoved(MessageType, subscriber.Handler, subscriber.Endpoint);
+
+            yield return new MessageRoutingChanged(new List<RouteAdded>(), new List<RouteRemoved>
+            {
+                new RouteRemoved(MessageType, subscriber.Handler, subscriber.Endpoint)
+            });
         }
 
         public IEnumerable<IEvent> Appoint(string handlerType, string endpoint)
@@ -119,11 +129,14 @@ namespace ExactlyOnce.Routing.Controller.Model
                 throw new Exception($"Cannot set {handlerType} at {endpoint} as destination for {MessageType} because this message type is considered an event by the handler.");
             }
 
+            var removed = new List<RouteRemoved>();
+            var added = new List<RouteAdded>();
+
             //Deactivate all other routes. There can be only one command for commands
             foreach (var destination in Destinations.Where(x => x.Handler != handlerType))
             {
                 DeactivateOrRemove(destination);
-                yield return new RouteRemoved(MessageType, destination.Handler, destination.Endpoint);
+                removed.Add(new RouteRemoved(MessageType, destination.Handler, destination.Endpoint));
             }
 
             //If a given handler is already activated, switch to different endpoint
@@ -132,11 +145,13 @@ namespace ExactlyOnce.Routing.Controller.Model
             if (handlerInAnotherEndpoint != null)
             {
                 DeactivateOrRemove(handlerInAnotherEndpoint);
-                yield return new RouteRemoved(MessageType, handlerInAnotherEndpoint.Handler, handlerInAnotherEndpoint.Endpoint);
+                removed.Add(new RouteRemoved(MessageType, handlerInAnotherEndpoint.Handler, handlerInAnotherEndpoint.Endpoint));
             }
 
             handler.Activate();
-            yield return new RouteAdded(MessageType, handler.Handler, handler.Endpoint, handler.Sites);
+            added.Add(new RouteAdded(MessageType, handler.Handler, handler.Endpoint, handler.Sites));
+
+            yield return new MessageRoutingChanged(added, removed);
         }
 
         public IEnumerable<IEvent> Dismiss(string handlerType, string endpoint)
@@ -163,7 +178,11 @@ namespace ExactlyOnce.Routing.Controller.Model
             }
 
             DeactivateOrRemove(handler);
-            yield return new RouteRemoved(MessageType, handler.Handler, handler.Endpoint);
+
+            yield return new MessageRoutingChanged(new List<RouteAdded>(), new List<RouteRemoved>
+            {
+                new RouteRemoved(MessageType, handler.Handler, handler.Endpoint)
+            });
         }
 
         public IEnumerable<IEvent> HandlerAdded(string handlerType, string handlerSite, string endpoint, MessageKind messageKind)

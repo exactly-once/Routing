@@ -66,21 +66,39 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                     await streamWriter.FlushAsync();
                     payloadStream.Seek(0, SeekOrigin.Begin);
 
-                    var response = await container.UpsertItemStreamAsync(
-                            payloadStream,
-                            new PartitionKey(stateId),
-                            requestOptions: new ItemRequestOptions
-                            {
-                                IfMatchEtag = version,
-                            }, cancellationToken: cancellationToken)
-                        .ConfigureAwait(false);
-
-                    if (!response.IsSuccessStatusCode)
+                    if (version == null)
                     {
-                        throw new Exception(response.ErrorMessage);
-                    }
+                        var response = await container.CreateItemStreamAsync(
+                                payloadStream,
+                                new PartitionKey(stateId),
+                                cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
 
-                    return response.Headers.ETag;
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            throw new Exception(response.ErrorMessage);
+                        }
+
+                        return response.Headers.ETag;
+                    }
+                    else
+                    {
+                        var response = await container.UpsertItemStreamAsync(
+                                payloadStream,
+                                new PartitionKey(stateId),
+                                requestOptions: new ItemRequestOptions
+                                {
+                                    IfMatchEtag = version,
+                                }, cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            throw new Exception(response.ErrorMessage);
+                        }
+
+                        return response.Headers.ETag;
+                    }
                 }
 
             }

@@ -7,8 +7,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public class ExactlyOnceProcessor
     {
-        OutboxStore outboxStore;
-        IStateStore stateStore;
+        readonly OutboxStore outboxStore;
+        readonly IStateStore stateStore;
 
         public ExactlyOnceProcessor(OutboxStore outboxStore, IStateStore stateStore)
         {

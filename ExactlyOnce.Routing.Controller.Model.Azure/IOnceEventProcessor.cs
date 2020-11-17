@@ -36,7 +36,10 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                 try
                 {
                     var operationId = $"{destinationType.Name}-{stateId}-{requestId}";
-                    return await processor.Process(operationId, stateId, destinationType, state =>
+
+                    var entityKey = DeterministicGuid.MakeId(stateId).ToString();
+
+                    return await processor.Process(operationId, entityKey, destinationType, state =>
                     {
                         var eventDrivenState = (State)state;
                         var events = eventDrivenState.OnEvent(eventMessage, subscriptions).ToArray();

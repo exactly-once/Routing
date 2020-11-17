@@ -39,7 +39,7 @@ namespace ExactlyOnce.Routing.Controller.Model
                 Instances[instanceId] = instance;
 
                 //We don't know this endpoint handlers yet
-                return Enumerable.Empty<IEvent>();
+                return GenerateInstanceLocationUpdated(instanceId, null, site);
             }
 
             if (instance.Site == site)
@@ -51,7 +51,8 @@ namespace ExactlyOnce.Routing.Controller.Model
             {
                 var handlersBefore = DeriveMessageHandlers(site);
                 instance.Move(site);
-                return ComputeMessageHandlerChanges(site, handlersBefore, DeriveMessageHandlers(site));
+                return ComputeMessageHandlerChanges(site, handlersBefore, DeriveMessageHandlers(site))
+                    .Concat(GenerateInstanceLocationUpdated(instanceId, null, site));
             }
 
             //Instance moved to a different site
@@ -62,7 +63,8 @@ namespace ExactlyOnce.Routing.Controller.Model
             instance.Move(site);
 
             return ComputeMessageHandlerChanges(previousSite, handlersInSourceSite, DeriveMessageHandlers(previousSite))
-                .Concat(ComputeMessageHandlerChanges(site, handlersInDestinationSite, DeriveMessageHandlers(site)));
+                .Concat(ComputeMessageHandlerChanges(site, handlersInDestinationSite, DeriveMessageHandlers(site)))
+                .Concat(GenerateInstanceLocationUpdated(instanceId, previousSite, site));
         }
 
         public IEnumerable<IEvent> OnStartup(string instanceId, Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers)
@@ -181,6 +183,14 @@ namespace ExactlyOnce.Routing.Controller.Model
             return kindsReported.Any(x => x != firstValue)
                 ? MessageKind.Undefined
                 : firstValue;
+        }
+
+        IEnumerable<IEvent> GenerateInstanceLocationUpdated(string instanceId, string previousSite, string currentSite)
+        {
+            if (previousSite != currentSite)
+            {
+                yield return new EndpointInstanceLocationUpdated(Name, instanceId, currentSite);
+            }
         }
 
         IEnumerable<IEvent> ComputeMessageHandlerChanges(string site, List<MessageHandlerInstance> oldHandlers, List<MessageHandlerInstance> newHandlers)

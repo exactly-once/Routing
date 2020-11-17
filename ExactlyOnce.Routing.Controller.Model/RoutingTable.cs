@@ -5,38 +5,38 @@ using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    public class RoutingTable : IEventHandler<RouteAdded>,
-        IEventHandler<RouteRemoved>,
+    public class RoutingTable : IEventHandler<MessageRoutingChanged>,
         IEventHandler<RouteChanged>,
-        IEventHandler<DestinationSiteToNextHopMapChanged>
+        IEventHandler<DestinationSiteToNextHopMapChanged>,
+        IEventHandler<EndpointInstanceLocationUpdated>
     {
         public int Version { get; private set; }
         //Each entry is guaranteed to refer to a different handler type
         public Dictionary<string, List<RoutingTableEntry>> Entries { get; }
         public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; private set; }
         public Dictionary<string, EndpointSiteRoutingPolicy> SiteRoutingPolicy { get; }
+        public Dictionary<string, List<EndpointInstanceId>> Sites { get; }
 
         //TODO: How to represent replacing one handler with another?
 
         public RoutingTable()
-            : this(
-                new Dictionary<string, List<RoutingTableEntry>>(),
+            : this(0, new Dictionary<string, List<RoutingTableEntry>>(),
                 new Dictionary<string, Dictionary<string, DestinationSiteInfo>>(),
-                new Dictionary<string, EndpointSiteRoutingPolicy>(), 
-                0)
+                new Dictionary<string, EndpointSiteRoutingPolicy>(), new Dictionary<string, List<EndpointInstanceId>> ())
         {
         }
 
         [JsonConstructor]
-        public RoutingTable(
-            Dictionary<string, List<RoutingTableEntry>> entries, 
-            Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping, 
-            Dictionary<string, EndpointSiteRoutingPolicy> siteRoutingPolicy, int version)
+        public RoutingTable(int version, Dictionary<string, List<RoutingTableEntry>> entries,
+            Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping,
+            Dictionary<string, EndpointSiteRoutingPolicy> siteRoutingPolicy,
+            Dictionary<string, List<EndpointInstanceId>> sites)
         {
             Entries = entries;
             DestinationSiteToNextHopMapping = destinationSiteToNextHopMapping;
             SiteRoutingPolicy = siteRoutingPolicy;
             Version = version;
+            Sites = sites;
         }
 
         public IEnumerable<IEvent> ConfigureEndpointSiteRouting(string endpoint, EndpointSiteRoutingPolicy? policy)
@@ -61,7 +61,7 @@ namespace ExactlyOnce.Routing.Controller.Model
             return GenerateChangeEvent();
         }
 
-        public IEnumerable<IEvent> OnRouteAdded(string messageType, string handlerType, string endpoint, List<string> sites)
+        void OnRouteAdded(string messageType, string handlerType, string endpoint, List<string> sites)
         {
             if (!Entries.TryGetValue(messageType, out var routes))
             {
@@ -73,53 +73,71 @@ namespace ExactlyOnce.Routing.Controller.Model
                 policy = EndpointSiteRoutingPolicy.RouteToOldest;
             }
             routes.Add(new RoutingTableEntry(handlerType, endpoint, sites, policy));
-            return GenerateChangeEvent();
         }
 
-        public IEnumerable<IEvent> OnRouteChanged(string messageType, string handlerType, string endpoint, List<string> sites)
-        {
-            var existing = Entries[messageType].Single(e => e.Handler == handlerType && e.Endpoint == endpoint);
-            existing.UpdateSites(sites);
-            return GenerateChangeEvent();
-        }
-
-        public IEnumerable<IEvent> OnRouteRemoved(string messageType, string handlerType, string endpoint)
+        void OnRouteRemoved(string messageType, string handlerType, string endpoint)
         {
             var existing = Entries[messageType].Single(e => e.Handler == handlerType && e.Endpoint == endpoint);
             Entries[messageType].Remove(existing);
-            return GenerateChangeEvent();
-        }
-
-        public IEnumerable<IEvent> OnTopologyChanged(Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMap)
-        {
-            DestinationSiteToNextHopMapping = destinationSiteToNextHopMap;
-            return GenerateChangeEvent();
         }
 
         IEnumerable<IEvent> GenerateChangeEvent()
         {
             Version++;
-            yield return new RoutingTableChanged(Version, Entries, DestinationSiteToNextHopMapping);
-        }
-
-        public IEnumerable<IEvent> Handle(RouteAdded e)
-        {
-            return OnRouteAdded(e.MessageType, e.HandlerType, e.Endpoint, e.Sites);
-        }
-
-        public IEnumerable<IEvent> Handle(RouteRemoved e)
-        {
-            return OnRouteRemoved(e.MessageType, e.HandlerType, e.Endpoint);
+            yield return new RoutingTableChanged(Version, Entries, DestinationSiteToNextHopMapping, Sites);
         }
 
         public IEnumerable<IEvent> Handle(RouteChanged e)
         {
-            return OnRouteChanged(e.MessageType, e.HandlerType, e.Endpoint, e.Sites);
+            var existing = Entries[e.MessageType].Single(e1 => e1.Handler == e.HandlerType && e1.Endpoint == e.Endpoint);
+            existing.UpdateSites(e.Sites);
+            return GenerateChangeEvent();
         }
 
         public IEnumerable<IEvent> Handle(DestinationSiteToNextHopMapChanged e)
         {
-            return OnTopologyChanged(e.DestinationSiteToNextHopMap);
+            DestinationSiteToNextHopMapping = e.DestinationSiteToNextHopMap;
+            return GenerateChangeEvent();
+        }
+
+        public IEnumerable<IEvent> Handle(MessageRoutingChanged e)
+        {
+            foreach (var removed in e.RemovedRoutes)
+            {
+                OnRouteRemoved(removed.MessageType, removed.HandlerType, removed.Endpoint);
+            }
+
+            foreach (var added in e.AddedRoutes)
+            {
+                OnRouteAdded(added.MessageType, added.HandlerType, added.Endpoint, added.Sites);
+            }
+
+            return GenerateChangeEvent();
+        }
+
+        public IEnumerable<IEvent> Handle(EndpointInstanceLocationUpdated e)
+        {
+            if (!Sites.TryGetValue(e.Site, out var site))
+            {
+                site = new List<EndpointInstanceId>();
+                Sites[e.Site] = site;
+            }
+
+            if (!site.Any(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint))
+            {
+                site.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId));
+            }
+
+            if (!DestinationSiteToNextHopMapping.ContainsKey(e.Site))
+            {
+                var destinationSiteInfos = new Dictionary<string, DestinationSiteInfo>
+                {
+                    [e.Site] = new DestinationSiteInfo(e.Site, e.Site, 0)
+                };
+                DestinationSiteToNextHopMapping[e.Site] = destinationSiteInfos;
+            }
+
+            return GenerateChangeEvent();
         }
     }
 }

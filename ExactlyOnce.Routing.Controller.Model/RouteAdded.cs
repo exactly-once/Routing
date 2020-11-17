@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    public class RouteAdded : IEvent
+    public class RouteAdded
     {
         [JsonConstructor]
         public RouteAdded(string messageType, string handlerType, string endpoint, List<string> sites)

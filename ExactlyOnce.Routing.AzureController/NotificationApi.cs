@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.WebJobs;
@@ -17,10 +19,20 @@ namespace ExactlyOnce.Routing.AzureController
             [SignalR(HubName = "RoutingController")] IAsyncCollector<SignalRMessage> signalRMessages,
             ILogger log)
         {
+            var e = eventMessage.Payload as RoutingTableChanged;
+            if (e == null)
+            {
+                //We only care about that specific event
+                return;
+            }
+
             await signalRMessages.AddAsync(new SignalRMessage
             {
-                Target = "newMessage",
-                Arguments = new[] { JsonConvert.SerializeObject(eventMessage.Payload) }
+                Target = "routeTableUpdated",
+                Arguments = new object[] { new RoutingTableUpdated
+                {
+                    JsonContent = JsonConvert.SerializeObject(e)
+                } }
             });
         }
 
@@ -30,6 +42,11 @@ namespace ExactlyOnce.Routing.AzureController
             [SignalRConnectionInfo(HubName = "RoutingController")] SignalRConnectionInfo connectionInfo)
         {
             return connectionInfo;
+        }
+
+        public class RoutingTableUpdated
+        {
+            public string JsonContent { get; set; }
         }
     }
 }

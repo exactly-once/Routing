@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,15 +13,16 @@ namespace ExactlyOnce.Routing.AzureController
     {
         [FunctionName(nameof(ProcessEventMessage))]
         public async Task ProcessEventMessage(
-            [QueueTrigger("event-queue")] EventMessage eventMessage, 
+            [QueueTrigger("event-queue")] EventMessage eventMessage,
             [ExactlyOnce(requestId: "{uniqueId}", stateId: "{destinationId}")] IOnceEventProcessor execute,
             [Queue("event-queue")] ICollector<EventMessage> eventCollector,
             [Queue("signalr")] ICollector<EventMessage> signalrCollector,
+            [Queue("routing-table-store")] ICollector<EventMessage> routeStoreCollector,
             ILogger log)
         {
             log.LogInformation(eventMessage.Source != null
-                ? $"Processing event published by {eventMessage.Source} with sequence {eventMessage.Sequence} addressed to {eventMessage.DestinationType} {eventMessage.DestinationId}."
-                : $"Processing event published addressed to {eventMessage.DestinationType} {eventMessage.DestinationId}.");
+                ? $"Processing event {eventMessage.Payload.GetType().Name} published by {eventMessage.Source} with sequence {eventMessage.Sequence} addressed to {eventMessage.DestinationType} {eventMessage.DestinationId}."
+                : $"Processing event {eventMessage.Payload.GetType().Name} addressed to {eventMessage.DestinationType} {eventMessage.DestinationId}.");
 
             var sideEffects = await execute.Once(eventMessage).ConfigureAwait(false);
             foreach (var message in sideEffects)
@@ -28,6 +30,10 @@ namespace ExactlyOnce.Routing.AzureController
                 if (message.DestinationType == typeof(NotificationApi).FullName) //HACK
                 {
                     signalrCollector.Add(message);
+                }
+                else if (message.DestinationType == typeof(RouteTableStorageApi).FullName) //HACK
+                {
+                    routeStoreCollector.Add(message);
                 }
                 else
                 {

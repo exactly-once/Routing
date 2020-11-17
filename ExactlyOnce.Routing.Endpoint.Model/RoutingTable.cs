@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Endpoint.Model
 {
@@ -9,26 +10,32 @@ namespace ExactlyOnce.Routing.Endpoint.Model
         //Each entry is guaranteed to refer to a different handler type
         public Dictionary<string, List<RoutingTableEntry>> Entries { get; }
         public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; }
+        public Dictionary<string, List<EndpointInstanceId>> Sites { get; }
+        public int Version { get; }
 
-        public RoutingTable(
-            Dictionary<string, List<RoutingTableEntry>> entries, 
-            Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping)
+        [JsonConstructor]
+        public RoutingTable(int version, 
+            Dictionary<string, List<RoutingTableEntry>> entries,
+            Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping,
+            Dictionary<string, List<EndpointInstanceId>> sites)
         {
             Entries = entries;
             DestinationSiteToNextHopMapping = destinationSiteToNextHopMapping;
+            Sites = sites;
+            Version = version;
         }
 
-        public List<RoutingSlip> SelectDestinations(string sendingSite, string messageType, Dictionary<string, string> headers, RoutingContext context)
+        public List<RoutingSlip> SelectDestinations(string sendingSite, string messageType, string explicitDestinationSite, RoutingContext context)
         {
             if (!Entries.TryGetValue(messageType, out var matchingEntries))
             {
                 throw new Exception($"Route not found for message type {messageType}");
             }
 
-            return matchingEntries.Select(entry => CreateRoutingSlip(sendingSite, headers, entry, context)).ToList();
+            return matchingEntries.Select(entry => CreateRoutingSlip(sendingSite, explicitDestinationSite, entry, context)).ToList();
         }
 
-        RoutingSlip CreateRoutingSlip(string sendingSite, Dictionary<string, string> headers, RoutingTableEntry routingTableEntry, RoutingContext context)
+        RoutingSlip CreateRoutingSlip(string sendingSite, string explicitDestinationSite, RoutingTableEntry routingTableEntry, RoutingContext context)
         {
             if (!DestinationSiteToNextHopMapping.TryGetValue(sendingSite, out var destinationsFromSource))
             {
@@ -45,24 +52,34 @@ namespace ExactlyOnce.Routing.Endpoint.Model
             string destinationSite;
             if (routingTableEntry.SiteRoutingPolicy == EndpointSiteRoutingPolicy.Explicit)
             {
-                if (!headers.TryGetValue("ExactlyOnce.Routing.Site", out var siteHeader))
+                if (explicitDestinationSite == null)
                 {
                     throw new Exception($"Site routing policy for endpoint {routingTableEntry.Endpoint} requires that site is explicitly specified when sending a message.");
                 }
 
-                if (!reachableSites.Contains(siteHeader))
+                if (!reachableSites.Contains(explicitDestinationSite))
                 {
-                    throw new Exception($"Selected site {siteHeader} is not reachable from sending site {sendingSite}");
+                    throw new Exception($"Selected site {explicitDestinationSite} is not reachable from sending site {sendingSite}");
                 }
-                destinationSite = siteHeader;
+                destinationSite = explicitDestinationSite;
             }
             else if (routingTableEntry.SiteRoutingPolicy == EndpointSiteRoutingPolicy.RoundRobin)
             {
+                if (explicitDestinationSite != null)
+                {
+                    throw new Exception($"Site routing policy for endpoint {routingTableEntry.Endpoint} (RoundRobin) prevents explicit destination site specification.");
+                }
+
                 var roundRobinValue = context.GetNextRoundRobinValueFor(routingTableEntry.Endpoint);
                 destinationSite = reachableSites[roundRobinValue % reachableSites.Length];
             }
             else if (routingTableEntry.SiteRoutingPolicy == EndpointSiteRoutingPolicy.RouteToNearest)
             {
+                if (explicitDestinationSite != null)
+                {
+                    throw new Exception($"Site routing policy for endpoint {routingTableEntry.Endpoint} (RouteToNearest) prevents explicit destination site specification.");
+                }
+
                 destinationSite = reachableSites
                     .Select(s => new { dest = s, cost = destinationsFromSource[s].Cost})
                     .OrderBy(x => x.cost)
@@ -71,6 +88,11 @@ namespace ExactlyOnce.Routing.Endpoint.Model
             }
             else if (routingTableEntry.SiteRoutingPolicy == EndpointSiteRoutingPolicy.RouteToOldest)
             {
+                if (explicitDestinationSite != null)
+                {
+                    throw new Exception($"Site routing policy for endpoint {routingTableEntry.Endpoint} (RouteToOldest) prevents explicit destination site specification.");
+                }
+
                 //TODO: Verify that oldest site entries are at the beginning of the collection
                 destinationSite = reachableSites.First();
             }
@@ -79,8 +101,15 @@ namespace ExactlyOnce.Routing.Endpoint.Model
                 throw new Exception($"Unsupported site routing policy {routingTableEntry.SiteRoutingPolicy}");
             }
 
-            var nextHop = destinationsFromSource[destinationSite].NextHopSite;
-            return new RoutingSlip(routingTableEntry.Handler, routingTableEntry.Endpoint, destinationSite, nextHop);
+            var nextHopSite = destinationSite == sendingSite 
+                ? null 
+                : destinationsFromSource[destinationSite].NextHopSite;
+
+            var nextHop = destinationSite == sendingSite
+                ? routingTableEntry.Endpoint
+                : destinationsFromSource[destinationSite].Router;
+
+            return new RoutingSlip(routingTableEntry.Handler, routingTableEntry.Endpoint, destinationSite, nextHopSite, nextHop);
         }
 
         public RoutingSlip GetNextHop(string incomingSite, RoutingSlip routingSlip)
@@ -98,10 +127,10 @@ namespace ExactlyOnce.Routing.Endpoint.Model
                 throw new Exception($"Site {routingSlip.DestinationSite} hosting endpoint {routingSlip.DestinationEndpoint} is not reachable from {incomingSite}.");
             }
 
-            return new RoutingSlip(routingSlip.DestinationHandler, routingSlip.DestinationEndpoint, routingSlip.DestinationSite, destination.NextHopSite);
+            return new RoutingSlip(routingSlip.DestinationHandler, routingSlip.DestinationEndpoint, routingSlip.DestinationSite, destination.NextHopSite, destination.Router);
         }
 
-        public RoutingSlip Reroute(string thisSite, RoutingSlip routingSlip, string messageType, Dictionary<string, string> headers, RoutingContext routingContext)
+        public RoutingSlip Reroute(string thisSite, string messageType, string destinationHandler, string explicitDestinationSite, RoutingContext routingContext)
         {
             //A message is re-routed when it arrives at the destination endpoint and it does not contain the handler or when the destination endpoint is no longer present
             //in the destination site?
@@ -112,14 +141,14 @@ namespace ExactlyOnce.Routing.Endpoint.Model
                 throw new Exception($"Message {messageType} cannot be rerouted to destination because message type is not recognized.");
             }
 
-            var newDestination = destinations.FirstOrDefault(x => x.Handler == routingSlip.DestinationHandler);
+            var newDestination = destinations.FirstOrDefault(x => x.Handler == destinationHandler);
             if (newDestination == null)
             {
                 //TODO: DLQ
-                throw new Exception($"Message {messageType} cannot be rerouted because destination handler {routingSlip.DestinationHandler} is not active.");
+                throw new Exception($"Message {messageType} cannot be rerouted because destination handler {destinationHandler} is not active.");
             }
 
-            return CreateRoutingSlip(thisSite, headers, newDestination, routingContext);
+            return CreateRoutingSlip(thisSite, explicitDestinationSite, newDestination, routingContext);
         }
 
         /*

@@ -100,24 +100,23 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
         public async Task Store(OutboxItem outboxItem, CancellationToken cancellationToken = default)
         {
-            // ReSharper disable once UseAwaitUsing
-            using var stream = MemoryStreamManager.GetStream();
-            // ReSharper disable once UseAwaitUsing
-            using var streamWriter = new StreamWriter(stream);
-            using var writer = new JsonTextWriter(streamWriter);
-
-            serializer.Serialize(writer, outboxItem);
-            await streamWriter.FlushAsync().ConfigureAwait(false);
-            stream.Position = 0;
-
-            var response = await container.UpsertItemStreamAsync(stream, PartitionKey.None, cancellationToken: cancellationToken);
-
-            // HINT: Outbox item should be created or re-updated (if there was a failure
-            //       during previous commit).
-            if (response.StatusCode != HttpStatusCode.Created &&
-                response.StatusCode != HttpStatusCode.OK)
+            using (var stream = MemoryStreamManager.GetStream())
+            using (var streamWriter = new StreamWriter(stream))
+            using (var writer = new JsonTextWriter(streamWriter))
             {
-                throw new Exception("Error storing outbox item");
+                serializer.Serialize(writer, outboxItem);
+                await streamWriter.FlushAsync().ConfigureAwait(false);
+                stream.Position = 0;
+
+                var response = await container.UpsertItemStreamAsync(stream, PartitionKey.None, cancellationToken: cancellationToken);
+
+                // HINT: Outbox item should be created or re-updated (if there was a failure
+                //       during previous commit).
+                if (response.StatusCode != HttpStatusCode.Created &&
+                    response.StatusCode != HttpStatusCode.OK)
+                {
+                    throw new Exception("Error storing outbox item");
+                }
             }
         }
 
