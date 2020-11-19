@@ -49,7 +49,7 @@ namespace NServiceBus
                     .Distinct();
 
                 var messageHandlersMap = allHandlers
-                    .ToDictionary(x => x.HandlerType.AssemblyQualifiedName, x =>
+                    .ToDictionary(x => BuildHandlerName(x.HandlerType), x =>
                     {
                         var handlerInterfaces = x.HandlerType.GetInterfaces()
                             .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IHandleMessages<>));
@@ -90,10 +90,18 @@ namespace NServiceBus
                 instance => transportInfrastructure.ToTransportAddress(LogicalAddress.CreateRemoteAddress(instance))), DependencyLifecycle.SingleInstance);
 
             context.Pipeline.Replace("UnicastPublishRouterConnector", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
+            context.Pipeline.Replace("MulticastPublishRouterBehavior", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
             context.Pipeline.Replace("UnicastSendRouterConnector", b => new SendRoutingConnector(b.Build<RoutingLogic>()));
 
             context.Pipeline.Replace("MessageDrivenSubscribeTerminator", new NullSubscribeTerminator(), "handles subscribe operations");
             context.Pipeline.Replace("MessageDrivenUnsubscribeTerminator", new NullUnsubscribeTerminator(), "handles unsubscribe operations");
+
+            context.Pipeline.Register(b => new ReroutingBehavior(b.Build<RoutingLogic>()), "Reroutes lost messages to their correct destinations");
+        }
+
+        static string BuildHandlerName(Type handlerType)
+        {
+            return $"{handlerType.FullName}, {handlerType.Assembly.GetName().Name}";
         }
     }
 }

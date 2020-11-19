@@ -6,13 +6,23 @@ namespace ExactlyOnce.Routing.Controller.Model
     public class MessageRoutingChanged : IEvent
     {
         [JsonConstructor]
-        public MessageRoutingChanged(List<RouteAdded> addedRoutes, List<RouteRemoved> removedRoutes)
+        public MessageRoutingChanged(RouteAdded addedRoute, List<RouteRemoved> removedRoutes)
         {
-            AddedRoutes = addedRoutes;
+            AddedRoute = addedRoute;
             RemovedRoutes = removedRoutes;
         }
 
-        public List<RouteAdded> AddedRoutes { get; }
+        public MessageRoutingChanged(List<RouteRemoved> removedRoutes)
+        {
+            RemovedRoutes = removedRoutes;
+        }
+
+        public MessageRoutingChanged(RouteAdded addedRoute)
+        {
+            AddedRoute = addedRoute;
+        }
+
+        public RouteAdded AddedRoute { get; }
         public List<RouteRemoved> RemovedRoutes { get; }
     }
 }

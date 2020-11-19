@@ -18,7 +18,7 @@ namespace ExactlyOnce.Routing.AzureController
         {
 
             var messages = await execute.Once(
-                x => x.Subscribe(request.HandlerType, request.Endpoint),
+                x => x.Subscribe(request.HandlerType, request.Endpoint, request.ReplacedHandlerType),
                 () => throw new Exception($"Message type not recognized {request.MessageType}"));
             foreach (var eventMessage in messages)
             {
@@ -88,6 +88,7 @@ namespace ExactlyOnce.Routing.AzureController
             public string MessageType { get; set; }
             public string Endpoint { get; set; }
             public string HandlerType { get; set; }
+            public string ReplacedHandlerType { get; set; }
         }
 
         public class UnsubscribeRequest

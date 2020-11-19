@@ -7,11 +7,25 @@ class MyMessage : ICommand
 {
 }
 
-class MyHandler : IHandleMessages<MyMessage>
+class MyEvent : IEvent
+{
+
+}
+
+class MyMessageHandler : IHandleMessages<MyMessage>
 {
     public Task Handle(MyMessage message, IMessageHandlerContext context)
     {
         Console.WriteLine("Message received.");
+        return Task.CompletedTask;
+    }
+}
+
+class MyEventHandler : IHandleMessages<MyEvent>
+{
+    public Task Handle(MyEvent message, IMessageHandlerContext context)
+    {
+        Console.WriteLine("Event received.");
         return Task.CompletedTask;
     }
 }
@@ -42,6 +56,7 @@ namespace Orders
                 try
                 {
                     await endpoint.Send(new MyMessage()).ConfigureAwait(false);
+                    await endpoint.Publish(new MyEvent()).ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {

@@ -16,13 +16,12 @@ namespace ExactlyOnce.Routing.Controller.Model
         public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; private set; }
         public Dictionary<string, EndpointSiteRoutingPolicy> SiteRoutingPolicy { get; }
         public Dictionary<string, List<EndpointInstanceId>> Sites { get; }
-
-        //TODO: How to represent replacing one handler with another?
+        public List<Redirection> Redirections { get; }
 
         public RoutingTable()
             : this(0, new Dictionary<string, List<RoutingTableEntry>>(),
                 new Dictionary<string, Dictionary<string, DestinationSiteInfo>>(),
-                new Dictionary<string, EndpointSiteRoutingPolicy>(), new Dictionary<string, List<EndpointInstanceId>> ())
+                new Dictionary<string, EndpointSiteRoutingPolicy>(), new Dictionary<string, List<EndpointInstanceId>> (), new List<Redirection>())
         {
         }
 
@@ -30,13 +29,15 @@ namespace ExactlyOnce.Routing.Controller.Model
         public RoutingTable(int version, Dictionary<string, List<RoutingTableEntry>> entries,
             Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping,
             Dictionary<string, EndpointSiteRoutingPolicy> siteRoutingPolicy,
-            Dictionary<string, List<EndpointInstanceId>> sites)
+            Dictionary<string, List<EndpointInstanceId>> sites,
+            List<Redirection> redirections)
         {
             Entries = entries;
             DestinationSiteToNextHopMapping = destinationSiteToNextHopMapping;
             SiteRoutingPolicy = siteRoutingPolicy;
             Version = version;
             Sites = sites;
+            Redirections = redirections;
         }
 
         public IEnumerable<IEvent> ConfigureEndpointSiteRouting(string endpoint, EndpointSiteRoutingPolicy? policy)
@@ -75,16 +76,24 @@ namespace ExactlyOnce.Routing.Controller.Model
             routes.Add(new RoutingTableEntry(handlerType, endpoint, sites, policy));
         }
 
-        void OnRouteRemoved(string messageType, string handlerType, string endpoint)
+        void OnRouteRemoved(string messageType, string handlerType, string endpoint, string replacingHandler, string replacingEndpoint)
         {
             var existing = Entries[messageType].Single(e => e.Handler == handlerType && e.Endpoint == endpoint);
+
+            if (replacingHandler != null)
+            {
+                //There can be only one redirection for a given endpoint/handler pair
+                Redirections.RemoveAll(x => x.FromEndpoint == handlerType && x.FromEndpoint == endpoint);
+                Redirections.Add(new Redirection(handlerType, endpoint, replacingHandler, replacingEndpoint));
+            }
+
             Entries[messageType].Remove(existing);
         }
 
         IEnumerable<IEvent> GenerateChangeEvent()
         {
             Version++;
-            yield return new RoutingTableChanged(Version, Entries, DestinationSiteToNextHopMapping, Sites);
+            yield return new RoutingTableChanged(Version, Entries, DestinationSiteToNextHopMapping, Sites, Redirections);
         }
 
         public IEnumerable<IEvent> Handle(RouteChanged e)
@@ -104,12 +113,11 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
             foreach (var removed in e.RemovedRoutes)
             {
-                OnRouteRemoved(removed.MessageType, removed.HandlerType, removed.Endpoint);
+                OnRouteRemoved(removed.MessageType, removed.HandlerType, removed.Endpoint, e.AddedRoute?.HandlerType, e.AddedRoute?.Endpoint);
             }
-
-            foreach (var added in e.AddedRoutes)
+            if (e.AddedRoute != null)
             {
-                OnRouteAdded(added.MessageType, added.HandlerType, added.Endpoint, added.Sites);
+                OnRouteAdded(e.AddedRoute.MessageType, e.AddedRoute.HandlerType, e.AddedRoute.Endpoint, e.AddedRoute.Sites);
             }
 
             return GenerateChangeEvent();

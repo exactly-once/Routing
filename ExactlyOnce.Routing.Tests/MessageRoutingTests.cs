@@ -86,7 +86,7 @@ namespace ExactlyOnce.Routing.Tests
         {
             var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>());
 
-            var events = messageRouting.Subscribe("MyMessageHandler", "NewReceiver").ToArray();
+            var events = messageRouting.Subscribe("MyMessageHandler", "NewReceiver", null).ToArray();
 
             var routeAdded = events.OfType<RouteAdded>().Single();
             var routeRemoved = events.OfType<RouteRemoved>().Single();
@@ -106,7 +106,7 @@ namespace ExactlyOnce.Routing.Tests
         {
             var messageRouting = new MessageRouting("Messages.MyMessage", new List<Destination>());
 
-            var events = messageRouting.Subscribe("AnotherMessageHandler", "Sub2").ToArray();
+            var events = messageRouting.Subscribe("AnotherMessageHandler", "Sub2", null).ToArray();
 
             var routeAdded = (RouteAdded)events.Single();
 

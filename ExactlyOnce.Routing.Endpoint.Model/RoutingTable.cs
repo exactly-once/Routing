@@ -11,17 +11,20 @@ namespace ExactlyOnce.Routing.Endpoint.Model
         public Dictionary<string, List<RoutingTableEntry>> Entries { get; }
         public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; }
         public Dictionary<string, List<EndpointInstanceId>> Sites { get; }
+        public List<Redirection> Redirections { get; }
         public int Version { get; }
 
         [JsonConstructor]
         public RoutingTable(int version, 
             Dictionary<string, List<RoutingTableEntry>> entries,
             Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping,
-            Dictionary<string, List<EndpointInstanceId>> sites)
+            Dictionary<string, List<EndpointInstanceId>> sites, 
+            List<Redirection> redirections)
         {
             Entries = entries;
             DestinationSiteToNextHopMapping = destinationSiteToNextHopMapping;
             Sites = sites;
+            Redirections = redirections;
             Version = version;
         }
 
@@ -130,41 +133,31 @@ namespace ExactlyOnce.Routing.Endpoint.Model
             return new RoutingSlip(routingSlip.DestinationHandler, routingSlip.DestinationEndpoint, routingSlip.DestinationSite, destination.NextHopSite, destination.Router);
         }
 
-        public RoutingSlip Reroute(string thisSite, string messageType, string destinationHandler, string explicitDestinationSite, RoutingContext routingContext)
+        public RoutingSlip Reroute(string thisSite, string messageType, string destinationHandler, string destinationEndpoint, string explicitDestinationSite, 
+            RoutingContext routingContext)
         {
-            //A message is re-routed when it arrives at the destination endpoint and it does not contain the handler or when the destination endpoint is no longer present
-            //in the destination site?
-
             if (!Entries.TryGetValue(messageType, out var destinations))
             {
                 //TODO: DLQ
                 throw new Exception($"Message {messageType} cannot be rerouted to destination because message type is not recognized.");
             }
 
-            var newDestination = destinations.FirstOrDefault(x => x.Handler == destinationHandler);
-            if (newDestination == null)
+            var existingEntry = destinations.FirstOrDefault(x => x.Handler == destinationHandler && x.Endpoint == destinationEndpoint);
+            if (existingEntry != null)
             {
-                //TODO: DLQ
-                throw new Exception($"Message {messageType} cannot be rerouted because destination handler {destinationHandler} is not active.");
+                //No need to redirect.
+                return null;
             }
 
-            return CreateRoutingSlip(thisSite, explicitDestinationSite, newDestination, routingContext);
-        }
+            var redirection = Redirections.FirstOrDefault(x => x.FromHandler == destinationHandler && x.FromEndpoint == destinationEndpoint);
+            if (redirection == null)
+            {
+                //TODO: DLQ
+                throw new Exception($"Message {messageType} cannot be rerouted because no redirection exists for endpoint {destinationEndpoint} and handler {destinationHandler}.");
+            }
 
-        /*
-         * Routing process (sending endpoint)
-         *  - Find all handlers that should receive the message
-         *  - For each handler find which endpoint hosts it
-         *  - For each endpoint find which site it belongs to
-         *  - If it is the same site as sender, send directly
-         *  - If it is different site, send to local router
-         *
-         * Routing process (intermediary)
-         *  - Find endpoint which hosts the destination handler
-         *  - If that endpoint is in one of the sites connected to this router, send directly
-         *  - Otherwise find next hop for the site the endpoint belongs to
-         *  - Find router name of the next hop site and send
-         * 
-         */
+            var redirectionEntry = destinations.FirstOrDefault(x => x.Handler == destinationHandler && x.Endpoint == destinationEndpoint);
+            return CreateRoutingSlip(thisSite, explicitDestinationSite, redirectionEntry, routingContext);
+        }
     }
 }

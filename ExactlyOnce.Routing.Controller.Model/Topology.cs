@@ -16,18 +16,6 @@ namespace ExactlyOnce.Routing.Controller.Model
         public Dictionary<string, RouterInfo> Routers { get; }
         public List<RouterInterfaceRule> Rules { get; }
 
-        /*
-         * Problems
-         *  - How to route commands and events if multiple same-price routes exist i.e. there are instances of handler in two places
-         *  that are the same distance away
-         *  - Sometimes we want round-robin if we are using multiple sites to handle larger traffic
-         *  - Sometimes we want to be explicit e.g. when destination endpoints are in separate physical locations
-         *  - Sometimes we want to inspect the message headers
-         *
-         *
-         *  Router/interface list -> connection list -> active connection list -> 
-         */
-
         public IEnumerable<IEvent> Handle(RouterInterfacesChanged e)
         {
             return UpdateRouter(e.Router, e.Interfaces);

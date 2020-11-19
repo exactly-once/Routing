@@ -235,7 +235,7 @@ namespace ExactlyOnce.Routing.NServiceBus
                 .Select(x => x.Key)
                 .FirstOrDefault();
             
-            if (thisSite == null)
+            if (site == null)
             {
                 log.Warn($"The updated routing table (version {routingTable.Version}) does not contain information about this endpoint. The update is going to be ignored.");
             }
@@ -279,7 +279,6 @@ namespace ExactlyOnce.Routing.NServiceBus
                     log.Error("Error while contacting the routing controller.", e);
                     await Task.Delay(httpRetryDelay);
                 }
-                
             }
         }
 
@@ -292,6 +291,26 @@ namespace ExactlyOnce.Routing.NServiceBus
         public IReadOnlyCollection<RoutingSlip> GetRoutesFor(Type messageType, string explicitDestinationSite)
         {
             var result = table.SelectDestinations(thisSite, messageType.FullName, explicitDestinationSite, new RoutingContext());
+            return result;
+        }
+
+        public RoutingSlip CheckIfReroutingIsNeeded(string messageType, string destinationHandler, string destinationEndpoint, string explicitDestinationSite)
+        {
+            if (!messageHandlersMap.TryGetValue(destinationHandler, out var handledMessage)
+                || handledMessage != messageType)
+            {
+                //The endpoint does not contain the destination handler
+                //TODO: DLQ
+                throw new Exception("");
+            }
+
+            if (destinationEndpoint != endpointName)
+            {
+                //The message has been misrouted
+                //TODO: DLQ
+                throw new Exception("");
+            }
+            var result =  table.Reroute(thisSite, messageType, destinationHandler, destinationEndpoint, explicitDestinationSite, new RoutingContext());
             return result;
         }
     }

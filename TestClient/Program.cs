@@ -64,14 +64,16 @@ namespace TestClient
             var name = args[0];
             var handler = args[1];
             var message = args[2];
-            var reportId = args.Length > 3 ? args[3] : RandomId();
+            var replacedHandler = args.Length > 3 ? args[3] : null;
+            var reportId = args.Length > 4 ? args[4] : RandomId();
 
             var request = new SubscribeRequest
             {
                 RequestId = reportId,
                 Endpoint = name,
                 HandlerType = handler,
-                MessageType = message
+                MessageType = message,
+                ReplacedHandlerType = replacedHandler
             };
 
             var json = JsonConvert.SerializeObject(request);
@@ -353,6 +355,7 @@ namespace TestClient
         public string MessageType { get; set; }
         public string Endpoint { get; set; }
         public string HandlerType { get; set; }
+        public string ReplacedHandlerType { get; set; }
     }
 
     public class UnsubscribeRequest

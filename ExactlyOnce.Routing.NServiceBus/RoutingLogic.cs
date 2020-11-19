@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ExactlyOnce.Routing.Endpoint.Model;
 using NServiceBus;
+using NServiceBus.Extensibility;
 using NServiceBus.Pipeline;
 using NServiceBus.Routing;
 
@@ -27,6 +28,29 @@ namespace ExactlyOnce.Routing.NServiceBus
             this.resolveTransportAddress = resolveTransportAddress;
         }
 
+        public RoutingStrategy CheckIfReroutingIsNeeded(IIncomingPhysicalMessageContext context)
+        {
+            if (!context.Message.Headers.TryGetValue("ExactlyOnce.Routing.RoutedType", out var messageType)
+                || !context.Message.Headers.TryGetValue("ExactlyOnce.Routing.DestinationHandler", out var destinationHandler)
+                || !context.Message.Headers.TryGetValue("ExactlyOnce.Routing.DestinationEndpoint", out var destinationEndpoint))
+            {
+                //We don't have rerouting information.
+                return null;
+            }
+
+            context.Message.Headers.TryGetValue("ExactlyOnce.Routing.DestinationSite", out var explicitSite);
+
+            var newRoutingSlip = routingTable.CheckIfReroutingIsNeeded(messageType, destinationHandler, destinationEndpoint, explicitSite);
+            if (newRoutingSlip == null)
+            {
+                //No need to re-route
+                return null;
+            }
+
+            return CreateRoutingStrategy(messageType, context.MessageId, context.Message.Headers, context.Extensions,
+                null, DistributionStrategyScope.Send, newRoutingSlip, explicitSite);
+        }
+
         public IEnumerable<RoutingStrategy> Route(Type messageType, IOutgoingContext context, OutgoingLogicalMessage outgoingMessage, DistributionStrategyScope distributionStrategyScope)
         {
             var explicitDestinationSite = GetDestinationSite(context);
@@ -34,14 +58,24 @@ namespace ExactlyOnce.Routing.NServiceBus
 
             foreach (var destination in routes)
             {
-                var candidates = EndpointNameToTransportAddresses(destination.NextHop).ToArray();
-                var distributionContext = new DistributionContext(candidates, outgoingMessage, context.MessageId, context.Headers, resolveTransportAddress, context.Extensions);
-                var distributionStrategy = distributionPolicy.GetDistributionStrategy(destination.NextHop, distributionStrategyScope);
-                var selected = distributionStrategy.SelectDestination(distributionContext);
-
-                var routingStrategy = new MapBasedRoutingStrategy(selected, explicitDestinationSite, messageType, destination);
-                yield return routingStrategy;
+                yield return CreateRoutingStrategy(messageType.FullName, context.MessageId, context.Headers, context.Extensions, outgoingMessage, 
+                    distributionStrategyScope, destination, explicitDestinationSite);
             }
+        }
+
+        RoutingStrategy CreateRoutingStrategy(string messageTypeFullName, string messageId, Dictionary<string, string> headers, ContextBag context,
+            OutgoingLogicalMessage outgoingMessage, DistributionStrategyScope distributionStrategyScope,
+            RoutingSlip destination, string explicitDestinationSite)
+        {
+            var candidates = EndpointNameToTransportAddresses(destination.NextHop).ToArray();
+            var distributionContext = new DistributionContext(candidates, outgoingMessage, messageId, headers,
+                resolveTransportAddress, context);
+            var distributionStrategy =
+                distributionPolicy.GetDistributionStrategy(destination.NextHop, distributionStrategyScope);
+            var selected = distributionStrategy.SelectDestination(distributionContext);
+
+            var routingStrategy = new MapBasedRoutingStrategy(selected, explicitDestinationSite, messageTypeFullName, destination);
+            return routingStrategy;
         }
 
         static string GetDestinationSite(IOutgoingContext context)
@@ -63,10 +97,10 @@ namespace ExactlyOnce.Routing.NServiceBus
         {
             readonly string destinationQueue;
             readonly string explicitDestinationSite;
-            readonly Type routedType;
+            readonly string routedType;
             readonly RoutingSlip routingSlip;
 
-            public MapBasedRoutingStrategy(string destinationQueue, string explicitDestinationSite, Type routedType, RoutingSlip routingSlip)
+            public MapBasedRoutingStrategy(string destinationQueue, string explicitDestinationSite, string routedType, RoutingSlip routingSlip)
             {
                 this.destinationQueue = destinationQueue;
                 this.explicitDestinationSite = explicitDestinationSite;
@@ -83,7 +117,7 @@ namespace ExactlyOnce.Routing.NServiceBus
 
                 headers["ExactlyOnce.Routing.DestinationEndpoint"] = routingSlip.DestinationEndpoint;
                 headers["ExactlyOnce.Routing.DestinationHandler"] = routingSlip.DestinationHandler;
-                headers["ExactlyOnce.Routing.RoutedType"] = routedType.FullName;
+                headers["ExactlyOnce.Routing.RoutedType"] = routedType;
                 return new UnicastAddressTag(destinationQueue);
             }
         }
