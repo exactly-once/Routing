@@ -13,24 +13,36 @@ namespace ExactlyOnce.Routing.AzureController
         [FunctionName(nameof(ConfigureEndpointSiteRouting))]
         public async Task<IActionResult> ConfigureEndpointSiteRouting(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] ConfigureEndpointSiteRoutingRequest request,
-            [ExactlyOnce(requestId: "{reportId}", stateId: "{TODO}")] IOnceExecutor<RoutingTableState, RoutingTable> execute,
-            [Queue("event-queue")] ICollector<EventMessage> eventCollector)
+            [ExactlyOnce(requestId: "{requestId}", stateId: "Instance")] IOnceExecutor<RoutingTableState, RoutingTable> execute,
+            [Queue("event-queue")] ICollector<EventMessage> eventCollector,
+            [Queue("signalr")] ICollector<EventMessage> signalrCollector,
+            [Queue("routing-table-store")] ICollector<EventMessage> routeStoreCollector)
         {
-            var messages = await execute.Once(
+            var sideEffects = await execute.Once(
                 r => r.ConfigureSiteRouting(request.EndpointName, request.Policy),
                 () => throw new Exception("Routing table not yet created"));
 
-            foreach (var eventMessage in messages)
+            foreach (var message in sideEffects)
             {
-                eventCollector.Add(eventMessage);
+                if (message.DestinationType == typeof(NotificationApi).FullName) //HACK
+                {
+                    signalrCollector.Add(message);
+                }
+                else if (message.DestinationType == typeof(RouteTableStorageApi).FullName) //HACK
+                {
+                    routeStoreCollector.Add(message);
+                }
+                else
+                {
+                    eventCollector.Add(message);
+                }
             }
-
             return new OkResult();
         }
 
         public class ConfigureEndpointSiteRoutingRequest
         {
-            public string ReportId { get; set; }
+            public string RequestId { get; set; }
             public string EndpointName { get; set; }
             public string Policy { get; set; }
         }

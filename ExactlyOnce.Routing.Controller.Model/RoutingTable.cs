@@ -24,10 +24,10 @@ namespace ExactlyOnce.Routing.Controller.Model
         public RoutingTable()
             : this(0, new Dictionary<string, List<RoutingTableEntry>>(),
                 new Dictionary<string, Dictionary<string, DestinationSiteInfo>>(),
-                new Dictionary<string, string>(), 
-                new Dictionary<string, string>(), 
-                new Dictionary<string, List<EndpointInstanceId>> (), 
-                new List<Redirection>(), 
+                new Dictionary<string, string>(),
+                new Dictionary<string, string>(),
+                new Dictionary<string, List<EndpointInstanceId>>(),
+                new List<Redirection>(),
                 new Dictionary<string, List<RouterInstanceInfo>>())
         {
         }
@@ -38,7 +38,7 @@ namespace ExactlyOnce.Routing.Controller.Model
             Dictionary<string, string> siteRoutingPolicy,
             Dictionary<string, string> distributionPolicy,
             Dictionary<string, List<EndpointInstanceId>> sites,
-            List<Redirection> redirections, 
+            List<Redirection> redirections,
             Dictionary<string, List<RouterInstanceInfo>> routerInstances)
         {
             Entries = entries;
@@ -160,22 +160,17 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public IEnumerable<IEvent> Handle(EndpointInstanceLocationUpdated e)
         {
-            if (!Sites.TryGetValue(e.Site, out var site))
+            if (!Sites.TryGetValue(e.Site, out var newSite))
             {
-                site = new List<EndpointInstanceId>();
-                Sites[e.Site] = site;
+                newSite = new List<EndpointInstanceId>();
+                Sites[e.Site] = newSite;
             }
 
-            var existingInstanceId = site.FirstOrDefault(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint);
+            var previousSite = Sites.Values.FirstOrDefault(s =>
+               s.Any(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint));
 
-            if (existingInstanceId == null)
-            {
-                site.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId, e.InputQueue));
-            }
-            else
-            {
-                existingInstanceId.UpdateInputQueue(e.InputQueue);
-            }
+            previousSite?.RemoveAll(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint);
+            newSite.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId, e.InputQueue));
 
             if (!DestinationSiteToNextHopMapping.ContainsKey(e.Site))
             {
@@ -196,20 +191,16 @@ namespace ExactlyOnce.Routing.Controller.Model
                 instances = new List<RouterInstanceInfo>();
                 RouterInstances[e.Router] = instances;
             }
+            var existingInstance = instances.FirstOrDefault(x => x.InstanceId == e.InstanceId);
+            if (existingInstance != null)
+            {
+                existingInstance.Update(e.SiteToQueueMap);
+            }
             else
             {
-                var existingInstance = instances.FirstOrDefault(x => x.InstanceId == e.InstanceId);
-                if (existingInstance != null)
-                {
-                    existingInstance.Update(e.SiteToQueueMap);
-                }
-                else
-                {
-                    var instance = new RouterInstanceInfo(e.InstanceId, e.SiteToQueueMap);
-                    instances.Add(instance);
-                }
+                var instance = new RouterInstanceInfo(e.InstanceId, e.SiteToQueueMap);
+                instances.Add(instance);
             }
-
             return GenerateChangeEvent();
         }
     }

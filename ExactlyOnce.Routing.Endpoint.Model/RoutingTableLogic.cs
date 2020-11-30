@@ -11,16 +11,13 @@ namespace ExactlyOnce.Routing.Endpoint.Model
 
         public RoutingTableLogic(
             RoutingTable routingTable,
-            Dictionary<string, Func<ISiteRoutingPolicy>> siteRoutingPolicyFactories,
-            Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories
+            SiteRoutingPolicyConfiguration siteRoutingPolicyConfiguration,
+            DistributionPolicyConfiguration distributionPolicyConfiguration
             )
         {
             this.routingTable = routingTable;
-            foreach (var entry in routingTable.Entries.Values.SelectMany(x => x))
-            {
-                InitializeSiteRoutingPolicy(routingTable, siteRoutingPolicyFactories, entry);
-            }
-            distributionPolicy = new DistributionPolicy(routingTable, distributionPolicyFactories);
+            siteRoutingPolicyConfiguration.InitializeSiteRoutingPolicies(routingTable);
+            distributionPolicy = distributionPolicyConfiguration.CreateDistributionPolicy(routingTable);
         }
 
         static void InitializeSiteRoutingPolicy(RoutingTable routingTable, Dictionary<string, Func<ISiteRoutingPolicy>> siteRoutingPolicyFactories,

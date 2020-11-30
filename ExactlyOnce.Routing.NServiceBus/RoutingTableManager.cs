@@ -26,6 +26,8 @@ namespace ExactlyOnce.Routing.NServiceBus
 
         readonly string routingControllerUrl;
         readonly BlobContainerClient routingControllerBlobContainerClient;
+        readonly SiteRoutingPolicyConfiguration siteRoutingPolicyConfiguration;
+        readonly DistributionPolicyConfiguration distributionPolicyConfiguration;
         readonly string routerName;
         readonly string siteName;
         readonly string endpointName;
@@ -34,8 +36,6 @@ namespace ExactlyOnce.Routing.NServiceBus
         readonly Dictionary<string, MessageKind> messageKindMap;
         readonly Dictionary<string, string> messageHandlersMap;
         readonly IDispatchMessages dispatcher;
-        readonly Dictionary<string, Func<ISiteRoutingPolicy>> siteRoutingPolicyFactories;
-        readonly Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories;
         readonly HttpClient httpClient;
         CancellationTokenSource stopTokenSource;
         Task notificationTask;
@@ -46,8 +46,8 @@ namespace ExactlyOnce.Routing.NServiceBus
 
         public RoutingTableManager(string routingControllerUrl,
             BlobContainerClient routingControllerBlobContainerClient,
-            Dictionary<string, Func<ISiteRoutingPolicy>> siteRoutingPolicyFactories,
-            Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories,
+            SiteRoutingPolicyConfiguration siteRoutingPolicyConfiguration,
+            DistributionPolicyConfiguration distributionPolicyConfiguration,
             string routerName,
             string siteName,
             string endpointName, 
@@ -59,6 +59,8 @@ namespace ExactlyOnce.Routing.NServiceBus
         {
             this.routingControllerUrl = routingControllerUrl;
             this.routingControllerBlobContainerClient = routingControllerBlobContainerClient;
+            this.siteRoutingPolicyConfiguration = siteRoutingPolicyConfiguration;
+            this.distributionPolicyConfiguration = distributionPolicyConfiguration;
             this.routerName = routerName;
             this.siteName = siteName;
             this.endpointName = endpointName;
@@ -67,8 +69,6 @@ namespace ExactlyOnce.Routing.NServiceBus
             this.messageKindMap = messageKindMap;
             this.messageHandlersMap = messageHandlersMap;
             this.dispatcher = dispatcher;
-            this.siteRoutingPolicyFactories = siteRoutingPolicyFactories;
-            this.distributionPolicyFactories = distributionPolicyFactories;
             httpClient = new HttpClient
             {
                 BaseAddress = new Uri(routingControllerUrl)
@@ -196,7 +196,7 @@ namespace ExactlyOnce.Routing.NServiceBus
             {
                 try
                 {
-                    table = new RoutingTableLogic(routingTable, siteRoutingPolicyFactories, distributionPolicyFactories);
+                    table = new RoutingTableLogic(routingTable, siteRoutingPolicyConfiguration, distributionPolicyConfiguration);
                     thisSite = site;
                     routingTableReady.SetResult(true);
                     log.Info($"Routing table version {routingTable.Version} loaded.");
@@ -282,7 +282,7 @@ namespace ExactlyOnce.Routing.NServiceBus
             {
                 try
                 {
-                    table = new RoutingTableLogic(routingTable, siteRoutingPolicyFactories, distributionPolicyFactories);
+                    table = new RoutingTableLogic(routingTable, siteRoutingPolicyConfiguration, distributionPolicyConfiguration);
                     thisSite = site;
                     routingTableReady.TrySetResult(true);
                     log.Info($"Routing table updated to version {routingTable.Version}");

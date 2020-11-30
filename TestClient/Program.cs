@@ -43,6 +43,8 @@ namespace TestClient
                     (ct, args) => Appoint(args, client)),
                 ("dis", "Dismiss. Syntax: dis <endpoint> <handler> <message> <request id?>",
                     (ct, args) => Dismiss(args, client)),
+                ("site-routing", "Configure endpoint site routing. Syntax: site-routing <endpoint> <policy>",
+                    (ct, args) => ConfigureSiteRouting(args, client)),
                 ("c", "Connect to notification service",
                     (ct, args) => Connect(args)),
                 ("d", "Disconnect from notification service",
@@ -173,6 +175,32 @@ namespace TestClient
 
             var json = JsonConvert.SerializeObject(request);
             var response = await client.PostAsync("api/Dismiss", new StringContent(json));
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine(response.ReasonPhrase);
+            }
+        }
+
+        static async Task ConfigureSiteRouting(string[] args, HttpClient client)
+        {
+            if (args.Length < 1)
+            {
+                Console.WriteLine("Not enough arguments.");
+                return;
+            }
+
+            var name = args[0];
+            var policy = args.Length > 1 ? args[1] : null;
+
+            var request = new ConfigureEndpointSiteRoutingRequest
+            {
+                RequestId = RandomId(),
+                EndpointName = name,
+                Policy = policy,
+            };
+
+            var json = JsonConvert.SerializeObject(request);
+            var response = await client.PostAsync("api/ConfigureEndpointSiteRouting", new StringContent(json));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);

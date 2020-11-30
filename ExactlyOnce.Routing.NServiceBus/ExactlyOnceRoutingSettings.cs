@@ -14,19 +14,8 @@ namespace NServiceBus
         internal BlobContainerClient ControllerContainerClient { get; set; }
         internal string RouterName { get; private set; }
         internal string SiteName { get; private set; }
-        internal Dictionary<string, Func<ISiteRoutingPolicy>> RoutingPolicies = new Dictionary<string, Func<ISiteRoutingPolicy>>
-        {
-            {"default", () => new RouteToMostRecentlyAddedSiteRoutingPolicy()},
-            {"explicit", () => new ExplicitSiteRoutingPolicy()},
-            {"round-robin", () => new RoundRobinSiteRoutingPolicy()},
-            {"most-recently-added", () => new RouteToMostRecentlyAddedSiteRoutingPolicy()},
-            {"nearest", () => new RouteToNearestSiteRoutingPolicy()},
-        };
-        internal Dictionary<string, Func<ExactlyOnceDistributionPolicy>> DistributionPolicies = new Dictionary<string, Func<ExactlyOnceDistributionPolicy>>()
-        {
-            {"default", () => new RoundRobinDistributionPolicy()},
-            {"round-robin", () => new RoundRobinDistributionPolicy()}
-        };
+        internal SiteRoutingPolicyConfiguration SiteRoutingPolicyConfiguration = new SiteRoutingPolicyConfiguration();
+        internal DistributionPolicyConfiguration DistributionPolicyConfiguration = new DistributionPolicyConfiguration();
 
         /// <summary>
         /// Declare that this endpoint communicates with other sites via the specified router.
@@ -47,12 +36,12 @@ namespace NServiceBus
 
         public void AddSiteRoutingPolicy(string name, Func<ISiteRoutingPolicy> policyFactory)
         {
-            RoutingPolicies.Add(name, policyFactory);
+            SiteRoutingPolicyConfiguration.AddSiteRoutingPolicy(name, policyFactory);
         }
 
         public void AddDistributionPolicy(string name, Func<ExactlyOnceDistributionPolicy> policyFactory)
         {
-            DistributionPolicies.Add(name, policyFactory);
+            DistributionPolicyConfiguration.AddDistributionPolicy(name, policyFactory);
         }
     }
 }

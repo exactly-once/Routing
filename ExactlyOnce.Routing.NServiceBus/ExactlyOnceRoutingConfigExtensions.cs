@@ -2,7 +2,6 @@
 using ExactlyOnce.Routing.Endpoint.Model;
 using NServiceBus.Configuration.AdvancedExtensibility;
 using NServiceBus.Features;
-using NServiceBus.Settings;
 
 // ReSharper disable once CheckNamespace
 namespace NServiceBus

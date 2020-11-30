@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Azure.Storage.Blobs;
 using ExactlyOnce.Routing.Endpoint.Model;
 using NServiceBus;
@@ -19,11 +18,7 @@ namespace ExactlyOnce.Router
         internal readonly Core.RouterConfiguration RouterConfig;
         internal readonly RoutingLogic RoutingLogic = new RoutingLogic();
 
-        internal Dictionary<string, Func<IDistributionPolicy>> DistributionPolicies = new Dictionary<string, Func<IDistributionPolicy>>()
-        {
-            {"default", () => new RoundRobinDistributionPolicy()},
-            {"round-robin", () => new RoundRobinDistributionPolicy()}
-        };
+        internal DistributionPolicyConfiguration DistributionPolicyConfiguration = new DistributionPolicyConfiguration();
 
         /// <summary>
         /// Creates new router configuration with provided endpoint name.
@@ -95,6 +90,16 @@ namespace ExactlyOnce.Router
         {
             get => RouterConfig.PoisonQueueName;
             set => RouterConfig.PoisonQueueName = value;
+        }
+
+        /// <summary>
+        /// Registers a custom distribution policy.
+        /// </summary>
+        /// <param name="name">Name of the endpoint or router.</param>
+        /// <param name="policyFactory">Factory for the policy objects.</param>
+        public void AddDistributionPolicy(string name, Func<IDistributionPolicy> policyFactory)
+        {
+            DistributionPolicyConfiguration.AddDistributionPolicy(name, policyFactory);
         }
     }
 }

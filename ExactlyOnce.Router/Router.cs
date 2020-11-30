@@ -15,7 +15,7 @@ namespace ExactlyOnce.Router
             var routingTableManager = new RoutingTableManager(
                 config.ControllerUrl, 
                 config.ControllerContainerClient,
-                config.DistributionPolicies,
+                config.DistributionPolicyConfiguration,
                 config.RouterConfig.Name,
                 config.InstanceId);
 

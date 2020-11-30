@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace ExactlyOnce.Routing.Endpoint.Model
 {
@@ -8,10 +7,10 @@ namespace ExactlyOnce.Routing.Endpoint.Model
         readonly RoutingTable routingTable;
         readonly DistributionPolicy distributionPolicy;
 
-        public RouterRoutingTableLogic(RoutingTable routingTable, Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories)
+        public RouterRoutingTableLogic(RoutingTable routingTable, DistributionPolicyConfiguration distributionPolicyConfiguration)
         {
             this.routingTable = routingTable;
-            distributionPolicy = new DistributionPolicy(routingTable, distributionPolicyFactories);
+            distributionPolicy = distributionPolicyConfiguration.CreateDistributionPolicy(routingTable);
         }
 
         public (RoutingSlip, string) GetNextHop(string incomingSite, string destinationHandler, string destinationEndpoint, string destinationSite, Dictionary<string, string> messageHeaders)

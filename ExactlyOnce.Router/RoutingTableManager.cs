@@ -20,9 +20,9 @@ namespace ExactlyOnce.Router
 
         readonly string routingControllerUrl;
         readonly BlobContainerClient routingControllerBlobContainerClient;
+        readonly DistributionPolicyConfiguration distributionPolicyConfiguration;
         readonly string routerName;
         readonly string instanceId;
-        readonly Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories;
         readonly HttpClient httpClient;
         CancellationTokenSource stopTokenSource;
         Task notificationTask;
@@ -32,15 +32,15 @@ namespace ExactlyOnce.Router
 
         public RoutingTableManager(string routingControllerUrl,
             BlobContainerClient routingControllerBlobContainerClient,
-            Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories,
+            DistributionPolicyConfiguration distributionPolicyConfiguration,
             string routerName,
             string instanceId)
         {
             this.routingControllerUrl = routingControllerUrl;
             this.routingControllerBlobContainerClient = routingControllerBlobContainerClient;
+            this.distributionPolicyConfiguration = distributionPolicyConfiguration;
             this.routerName = routerName;
             this.instanceId = instanceId;
-            this.distributionPolicyFactories = distributionPolicyFactories;
             httpClient = new HttpClient
             {
                 BaseAddress = new Uri(routingControllerUrl)
@@ -125,7 +125,7 @@ namespace ExactlyOnce.Router
 
             try
             {
-                table = new RouterRoutingTableLogic(routingTable, distributionPolicyFactories);
+                table = new RouterRoutingTableLogic(routingTable, distributionPolicyConfiguration);
                 routingTableReady.SetResult(true);
                 log.Info($"Routing table version {routingTable.Version} loaded.");
             }
@@ -198,7 +198,7 @@ namespace ExactlyOnce.Router
         {
             try
             {
-                table = new RouterRoutingTableLogic(routingTable, distributionPolicyFactories);
+                table = new RouterRoutingTableLogic(routingTable, distributionPolicyConfiguration);
                 routingTableReady.TrySetResult(true);
                 log.Info($"Routing table updated to version {routingTable.Version}");
             }

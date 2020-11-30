@@ -80,8 +80,8 @@ namespace NServiceBus
 
                 return new RoutingTableManager(settings.ControllerUrl, 
                     settings.ControllerContainerClient, 
-                    settings.RoutingPolicies, 
-                    settings.DistributionPolicies, 
+                    settings.SiteRoutingPolicyConfiguration, 
+                    settings.DistributionPolicyConfiguration, 
                     settings.RouterName, 
                     settings.SiteName, 
                     context.Settings.EndpointName(), 
