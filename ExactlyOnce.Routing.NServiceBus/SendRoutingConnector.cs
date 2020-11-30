@@ -19,7 +19,7 @@ namespace ExactlyOnce.Routing.NServiceBus
         public override async Task Invoke(IOutgoingSendContext context, Func<IOutgoingLogicalMessageContext, Task> stage)
         {
             var messageType = context.Message.MessageType;
-            var routingStrategies = router.Route(messageType, context, context.Message, DistributionStrategyScope.Send).ToList();
+            var routingStrategies = router.Route(messageType, context).ToList();
             if (routingStrategies.Count == 0)
             {
                 throw new Exception($"No routes found for message {messageType.AssemblyQualifiedName}");

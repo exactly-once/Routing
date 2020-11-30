@@ -6,6 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NServiceBus.Serilog" Version="7.2.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Include="NServiceBus.RabbitMQ" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\ExactlyOnce.Routing.NServiceBus\ExactlyOnce.Routing.NServiceBus.csproj" />
     <ProjectReference Include="..\Messages\Messages.csproj" />
   </ItemGroup>

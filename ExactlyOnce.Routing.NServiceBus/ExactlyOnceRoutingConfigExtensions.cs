@@ -1,4 +1,5 @@
 ﻿using Azure.Storage.Blobs;
+using ExactlyOnce.Routing.Endpoint.Model;
 using NServiceBus.Configuration.AdvancedExtensibility;
 using NServiceBus.Features;
 using NServiceBus.Settings;
@@ -6,6 +7,13 @@ using NServiceBus.Settings;
 // ReSharper disable once CheckNamespace
 namespace NServiceBus
 {
+    //TODO: Authorization
+    //TODO: DLQ proxy for ServiceControl
+    //TODO: Partitioning of Outbox collection
+    //TODO: Mixed-mode and migration
+    //TODO: Production-quality command line tool
+    //TODO: On-premises version (SQL, SignalR Core)
+
     /// <summary>
     /// Extensions for configuring blueprint-based routing functionality.
     /// </summary>
@@ -19,7 +27,7 @@ namespace NServiceBus
         /// <param name="controllerUrl">URL of the routing controller.</param>
         public static ExactlyOnceRoutingSettings UseExactlyOnceRouting(this EndpointConfiguration config, 
             BlobContainerClient controllerContainerClient,
-            string controllerUrl /*TODO: Auth?*/)
+            string controllerUrl)
         {
             config.DisableFeature<AutoSubscribe>();
             config.GetSettings().EnableFeatureByDefault<ExactlyOnceRoutingFeature>();
@@ -28,6 +36,8 @@ namespace NServiceBus
 
             settings.ControllerUrl = controllerUrl;
             settings.ControllerContainerClient = controllerContainerClient;
+
+            config.GetSettings().AddUnrecoverableException(typeof(MoveToDeadLetterQueueException));
 
             return settings;
         }

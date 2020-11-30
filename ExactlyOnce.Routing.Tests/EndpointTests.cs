@@ -32,7 +32,7 @@ namespace ExactlyOnce.Routing.Tests
 
             Assert.IsEmpty(changes);
 
-            changes = receiverEndpoint.OnStartup("A", new Dictionary<string, MessageKind>
+            changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
             }, new List<MessageHandlerInstance>
@@ -59,7 +59,7 @@ namespace ExactlyOnce.Routing.Tests
                 new Dictionary<string, EndpointInstance>(),
                 new Dictionary<string, MessageKind>());
 
-            var changes = receiverEndpoint.OnStartup("A", new Dictionary<string, MessageKind>
+            var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
             }, new List<MessageHandlerInstance>
@@ -89,7 +89,7 @@ namespace ExactlyOnce.Routing.Tests
                 new Dictionary<string, EndpointInstance>(),
                 new Dictionary<string, MessageKind>());
 
-            var changes = receiverEndpoint.OnStartup("A", new Dictionary<string, MessageKind>
+            var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
             }, new List<MessageHandlerInstance>
@@ -101,7 +101,7 @@ namespace ExactlyOnce.Routing.Tests
 
             Assert.AreEqual(MessageKind.Command, typeAdded.Kind);
 
-            changes = receiverEndpoint.OnStartup("A", new Dictionary<string, MessageKind>
+            changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Event
             }, new List<MessageHandlerInstance>
@@ -121,7 +121,7 @@ namespace ExactlyOnce.Routing.Tests
                 new Dictionary<string, EndpointInstance>(),
                 new Dictionary<string, MessageKind>());
 
-            var changes = receiverEndpoint.OnStartup("A", new Dictionary<string, MessageKind>
+            var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
             }, new List<MessageHandlerInstance>
@@ -129,7 +129,7 @@ namespace ExactlyOnce.Routing.Tests
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
             }).ToArray();
 
-            changes = receiverEndpoint.OnStartup("B", new Dictionary<string, MessageKind>
+            changes = receiverEndpoint.OnStartup("B", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
             }, new List<MessageHandlerInstance>()).ToArray();
@@ -158,7 +158,7 @@ namespace ExactlyOnce.Routing.Tests
                 new Dictionary<string, EndpointInstance>(),
                 new Dictionary<string, MessageKind>());
 
-            var changes = receiverEndpoint.OnStartup("A", new Dictionary<string, MessageKind>
+            var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
             }, new List<MessageHandlerInstance>
@@ -166,7 +166,7 @@ namespace ExactlyOnce.Routing.Tests
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
             }).ToArray();
 
-            changes = receiverEndpoint.OnStartup("B", new Dictionary<string, MessageKind>
+            changes = receiverEndpoint.OnStartup("B", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
             }, new List<MessageHandlerInstance>()).ToArray();

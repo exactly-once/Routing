@@ -10,8 +10,12 @@ using ExactlyOnce.Routing.Endpoint.Model;
 using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using NServiceBus;
+using NServiceBus.Extensibility;
 using NServiceBus.Features;
 using NServiceBus.Logging;
+using NServiceBus.Routing;
+using NServiceBus.Transport;
+using IDistributionPolicy = ExactlyOnce.Routing.Endpoint.Model.IDistributionPolicy;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace ExactlyOnce.Routing.NServiceBus
@@ -25,33 +29,46 @@ namespace ExactlyOnce.Routing.NServiceBus
         readonly string routerName;
         readonly string siteName;
         readonly string endpointName;
+        readonly string inputQueue;
         readonly string instanceId;
         readonly Dictionary<string, MessageKind> messageKindMap;
         readonly Dictionary<string, string> messageHandlersMap;
+        readonly IDispatchMessages dispatcher;
+        readonly Dictionary<string, Func<ISiteRoutingPolicy>> siteRoutingPolicyFactories;
+        readonly Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories;
         readonly HttpClient httpClient;
         CancellationTokenSource stopTokenSource;
         Task notificationTask;
         Task registerTask;
-        volatile RoutingTable table;
+        volatile RoutingTableLogic table;
         string thisSite;
         TimeSpan httpRetryDelay = TimeSpan.FromSeconds(5);
 
-        public RoutingTableManager(string routingControllerUrl, 
+        public RoutingTableManager(string routingControllerUrl,
             BlobContainerClient routingControllerBlobContainerClient,
+            Dictionary<string, Func<ISiteRoutingPolicy>> siteRoutingPolicyFactories,
+            Dictionary<string, Func<IDistributionPolicy>> distributionPolicyFactories,
             string routerName,
             string siteName,
-            string endpointName, string instanceId, 
-            Dictionary<string, MessageKind> messageKindMap, 
-            Dictionary<string, string> messageHandlersMap)
+            string endpointName, 
+            string inputQueue,
+            string instanceId,
+            Dictionary<string, MessageKind> messageKindMap,
+            Dictionary<string, string> messageHandlersMap,
+            IDispatchMessages dispatcher)
         {
             this.routingControllerUrl = routingControllerUrl;
             this.routingControllerBlobContainerClient = routingControllerBlobContainerClient;
             this.routerName = routerName;
             this.siteName = siteName;
             this.endpointName = endpointName;
+            this.inputQueue = inputQueue;
             this.instanceId = instanceId;
             this.messageKindMap = messageKindMap;
             this.messageHandlersMap = messageHandlersMap;
+            this.dispatcher = dispatcher;
+            this.siteRoutingPolicyFactories = siteRoutingPolicyFactories;
+            this.distributionPolicyFactories = distributionPolicyFactories;
             httpClient = new HttpClient
             {
                 BaseAddress = new Uri(routingControllerUrl)
@@ -62,8 +79,8 @@ namespace ExactlyOnce.Routing.NServiceBus
         {
             stopTokenSource = new CancellationTokenSource();
 
-            var routingTableReady = new TaskCompletionSource<bool>();
-            var connected = new TaskCompletionSource<bool>();
+            var routingTableReady = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var connected = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoadRoutingTable(routingTableReady).ConfigureAwait(false);
 
@@ -76,6 +93,7 @@ namespace ExactlyOnce.Routing.NServiceBus
                     await connected.Task.ConfigureAwait(false);
 
                     await Register().ConfigureAwait(false);
+
                     if (routerName != null)
                     {
                         await SendHelloToRouter().ConfigureAwait(false);
@@ -117,20 +135,32 @@ namespace ExactlyOnce.Routing.NServiceBus
                         log.Info("Endpoint registered its site with the routing controller.");
                         break;
                     }
-                    log.Error($"Error while contacting the routing controller. {response.StatusCode}: {response.ReasonPhrase}");
+                    log.Warn($"Error while contacting the routing controller. {response.StatusCode}: {response.ReasonPhrase}");
                     await Task.Delay(httpRetryDelay);
                 }
                 catch (HttpRequestException e)
                 {
-                    log.Error("Error while contacting the routing controller.", e);
+                    log.Warn("Error while contacting the routing controller.", e);
                     await Task.Delay(httpRetryDelay);
                 }
             }
         }
 
-        async Task SendHelloToRouter()
+        Task SendHelloToRouter()
         {
-            //TODO
+            var reportId = Guid.NewGuid().ToString();
+
+            var headers = new Dictionary<string, string>
+            {
+                ["ExactlyOnce.Routing.ControlMessage.Type"] = "Hello",
+                ["ExactlyOnce.Routing.ControlMessage.Hello.EndpointName"] = endpointName,
+                ["ExactlyOnce.Routing.ControlMessage.Hello.InstanceId"] = instanceId
+            };
+
+            var message = new OutgoingMessage(reportId, headers, new byte[0]);
+            var op = new TransportOperation(message, new UnicastAddressTag(routerName));
+
+            return dispatcher.Dispatch(new TransportOperations(op), new TransportTransaction(), new ContextBag());
         }
 
         async Task LoadRoutingTable(TaskCompletionSource<bool> routingTableReady)
@@ -148,7 +178,8 @@ namespace ExactlyOnce.Routing.NServiceBus
             }
             catch (Exception e)
             {
-                throw new Exception("Error while downloading the routing table.", e);
+                log.Warn("Error while downloading the routing table. The endpoint will not start until the routing table is loaded", e);
+                return;
             }
 
             // ReSharper disable once PossibleNullReferenceException
@@ -163,9 +194,17 @@ namespace ExactlyOnce.Routing.NServiceBus
             }
             else
             {
-                thisSite = site;
-                table = routingTable;
-                routingTableReady.SetResult(true);
+                try
+                {
+                    table = new RoutingTableLogic(routingTable, siteRoutingPolicyFactories, distributionPolicyFactories);
+                    thisSite = site;
+                    routingTableReady.SetResult(true);
+                    log.Info($"Routing table version {routingTable.Version} loaded.");
+                }
+                catch (Exception e)
+                {
+                    log.Error($"Error loading routing table version {routingTable.Version}.", e);
+                }
             }
         }
 
@@ -214,7 +253,7 @@ namespace ExactlyOnce.Routing.NServiceBus
                 }
                 catch (Exception e)
                 {
-                    log.Error("Error while connecting to SignalR notification hub", e);
+                    log.Warn("Error while connecting to SignalR notification hub", e);
                     reconnectBarrier.Release();
                     await Task.Delay(httpRetryDelay).ConfigureAwait(false);
                 }
@@ -241,9 +280,17 @@ namespace ExactlyOnce.Routing.NServiceBus
             }
             else
             {
-                table = routingTable;
-                thisSite = site;
-                routingTableReady.TrySetResult(true);
+                try
+                {
+                    table = new RoutingTableLogic(routingTable, siteRoutingPolicyFactories, distributionPolicyFactories);
+                    thisSite = site;
+                    routingTableReady.TrySetResult(true);
+                    log.Info($"Routing table updated to version {routingTable.Version}");
+                }
+                catch (Exception e)
+                {
+                    log.Error($"Error loading routing table version {routingTable.Version}.", e);
+                }
             }
         }
 
@@ -253,6 +300,7 @@ namespace ExactlyOnce.Routing.NServiceBus
             var payload = new EndpointReportRequest
             {
                 EndpointName = endpointName,
+                InputQueue = inputQueue,
                 RecognizedMessages = messageKindMap,
                 MessageHandlers = messageHandlersMap,
                 InstanceId = instanceId,
@@ -270,47 +318,37 @@ namespace ExactlyOnce.Routing.NServiceBus
                         log.Info("Endpoint registered with the routing controller.");
                         break;
                     }
-                    log.Error($"Error while contacting the routing controller. {response.StatusCode}: {response.ReasonPhrase}");
+                    log.Warn($"Error while contacting the routing controller. {response.StatusCode}: {response.ReasonPhrase}");
                     await Task.Delay(httpRetryDelay);
 
                 }
                 catch (HttpRequestException e)
                 {
-                    log.Error("Error while contacting the routing controller.", e);
+                    log.Warn("Error while contacting the routing controller.", e);
                     await Task.Delay(httpRetryDelay);
                 }
             }
         }
 
-        protected override Task OnStop(IMessageSession session)
+        protected override async Task OnStop(IMessageSession session)
         {
             stopTokenSource.Cancel();
-            return notificationTask;
+            await notificationTask.ConfigureAwait(false);
+            await registerTask.ConfigureAwait(false);
         }
 
-        public IReadOnlyCollection<RoutingSlip> GetRoutesFor(Type messageType, string explicitDestinationSite)
+        public IReadOnlyCollection<RoutingSlip> GetRoutesFor(Type messageType, string explicitDestinationSite, IReadOnlyDictionary<string, string> headers)
         {
-            var result = table.SelectDestinations(thisSite, messageType.FullName, explicitDestinationSite, new RoutingContext());
+            var context = new SiteRoutingPolicyContext(thisSite, explicitDestinationSite, headers);
+            var result = table.SelectDestinations(messageType.FullName, context);
             return result;
         }
 
-        public RoutingSlip CheckIfReroutingIsNeeded(string messageType, string destinationHandler, string destinationEndpoint, string explicitDestinationSite)
+        public RoutingSlip CheckIfReroutingIsNeeded(string messageType, string destinationHandler, string destinationEndpoint, string explicitDestinationSite, IReadOnlyDictionary<string, string> headers)
         {
-            if (!messageHandlersMap.TryGetValue(destinationHandler, out var handledMessage)
-                || handledMessage != messageType)
-            {
-                //The endpoint does not contain the destination handler
-                //TODO: DLQ
-                throw new Exception("");
-            }
+            var context = new SiteRoutingPolicyContext(thisSite, explicitDestinationSite, headers);
+            var result = table.Reroute(messageType, destinationHandler, destinationEndpoint, context);
 
-            if (destinationEndpoint != endpointName)
-            {
-                //The message has been misrouted
-                //TODO: DLQ
-                throw new Exception("");
-            }
-            var result =  table.Reroute(thisSite, messageType, destinationHandler, destinationEndpoint, explicitDestinationSite, new RoutingContext());
             return result;
         }
     }

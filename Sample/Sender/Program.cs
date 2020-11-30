@@ -2,12 +2,25 @@
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using NServiceBus;
+using NServiceBus.Logging;
+using NServiceBus.Serilog;
+using Serilog;
+using Serilog.Filters;
 
 class Program
 {
     static async Task Main(string[] args)
     {
         var hostId = Guid.Parse("8C26D86E-8715-493D-8AFA-98747CB6BAFC");
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}")
+            .CreateLogger();
+
+        LogManager.Use<SerilogFactory>();
+
+        Console.Title = "Sender";
 
         var config = new EndpointConfiguration("Sender");
         config.UseTransport<LearningTransport>();

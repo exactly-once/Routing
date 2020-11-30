@@ -21,7 +21,7 @@ namespace ExactlyOnce.Routing.NServiceBus
         public override async Task Invoke(IOutgoingPublishContext context, Func<IOutgoingLogicalMessageContext, Task> stage)
         {
             var eventType = context.Message.MessageType;
-            var routingStrategies = router.Route(eventType, context, context.Message, DistributionStrategyScope.Send).ToList();
+            var routingStrategies = router.Route(eventType, context).ToList();
             if (routingStrategies.Count == 0)
             {
                 logger.Warn($"No subscribers for message {eventType}.");

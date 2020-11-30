@@ -38,7 +38,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
         protected override IEnumerable<IEvent> Process(IEvent e)
         {
-            var dataType = GetType().BaseType.GetGenericArguments()[0]; //TODO: Make it more robust to handle inheritance
+            var dataType = GetType().BaseType.GetGenericArguments()[0];
             Data ??= (T) Activator.CreateInstance(dataType);
             return HandlerInvoker.Process(e, Data, dataType);
         }

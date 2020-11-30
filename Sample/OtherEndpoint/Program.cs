@@ -2,6 +2,9 @@
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using NServiceBus;
+using NServiceBus.Logging;
+using NServiceBus.Serilog;
+using Serilog;
 
 class MyMessageHandler : IHandleMessages<MyMessage>
 {
@@ -27,14 +30,27 @@ class Program
     {
         var hostId = Guid.Parse("E059FB33-3FD7-45F6-B06F-E0B83BDD91C7");
 
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}")
+            .CreateLogger();
+
+        LogManager.Use<SerilogFactory>();
+
+        Console.Title = "OtherEndpoint";
+
         var config = new EndpointConfiguration("OtherEndpoint");
-        config.UseTransport<LearningTransport>();
+        var transport = config.UseTransport<RabbitMQTransport>();
+        transport.ConnectionString("host=localhost");
+        transport.UseConventionalRoutingTopology();
+
         config.UniquelyIdentifyRunningInstance().UsingCustomIdentifier(hostId);
+        config.EnableInstallers();
 
         var routingSettings = config.UseExactlyOnceRouting(new BlobContainerClient("UseDevelopmentStorage=true", "routing-table"),
             "http://localhost:7071/api");
 
-        routingSettings.SetSiteName("SiteA");
+        routingSettings.ConnectToRouter("MyRouter");
 
         var endpoint = await Endpoint.Start(config);
 

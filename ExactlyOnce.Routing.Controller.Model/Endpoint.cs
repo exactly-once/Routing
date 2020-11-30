@@ -35,60 +35,62 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
             if (!Instances.TryGetValue(instanceId, out var instance))
             {
-                instance = new EndpointInstance(instanceId, new List<MessageHandlerInstance>(), new Dictionary<string, MessageKind>(), site);
+                instance = new EndpointInstance(instanceId, null, new List<MessageHandlerInstance>(), new Dictionary<string, MessageKind>(), site);
                 Instances[instanceId] = instance;
 
-                //We don't know this endpoint handlers yet
-                return GenerateInstanceLocationUpdated(instanceId, null, site);
+                return Enumerable.Empty<IEvent>();
             }
 
-            if (instance.Site == site)
-            {
-                return Enumerable.Empty<IEvent>(); //No changes
-            }
+            var result = GenerateInstanceLocationUpdated(instanceId, instance.Site, site, instance.InputQueue, instance.InputQueue);
 
             if (instance.Site == null)
             {
                 var handlersBefore = DeriveMessageHandlers(site);
                 instance.Move(site);
-                return ComputeMessageHandlerChanges(site, handlersBefore, DeriveMessageHandlers(site))
-                    .Concat(GenerateInstanceLocationUpdated(instanceId, null, site));
+                result = result
+                    .Concat(ComputeMessageHandlerChanges(site, handlersBefore, DeriveMessageHandlers(site)));
+            }
+            else if (instance.Site != site)
+            {
+                //Instance moved to a different site
+                var previousSite = instance.Site;
+                var handlersInSourceSite = DeriveMessageHandlers(previousSite);
+                var handlersInDestinationSite = DeriveMessageHandlers(site);
+
+                instance.Move(site);
+
+                result = result
+                    .Concat(ComputeMessageHandlerChanges(previousSite, handlersInSourceSite,DeriveMessageHandlers(previousSite))
+                    .Concat(ComputeMessageHandlerChanges(site, handlersInDestinationSite, DeriveMessageHandlers(site))));
             }
 
-            //Instance moved to a different site
-            var previousSite = instance.Site;
-            var handlersInSourceSite = DeriveMessageHandlers(previousSite);
-            var handlersInDestinationSite = DeriveMessageHandlers(site);
-
-            instance.Move(site);
-
-            return ComputeMessageHandlerChanges(previousSite, handlersInSourceSite, DeriveMessageHandlers(previousSite))
-                .Concat(ComputeMessageHandlerChanges(site, handlersInDestinationSite, DeriveMessageHandlers(site)))
-                .Concat(GenerateInstanceLocationUpdated(instanceId, previousSite, site));
+            return result;
         }
 
-        public IEnumerable<IEvent> OnStartup(string instanceId, Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers)
+        public IEnumerable<IEvent> OnStartup(string instanceId, string inputQueue, Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers)
         {
             List<string> affectedMessageTypes;
             if (!Instances.TryGetValue(instanceId, out var instance))
             {
-                instance = new EndpointInstance(instanceId, messageHandlers, recognizedMessages, null);
+                instance = new EndpointInstance(instanceId, inputQueue, messageHandlers, recognizedMessages, null);
                 Instances[instanceId] = instance;
                 affectedMessageTypes = instance.RecognizedMessages.Keys.ToList();
                 return DeriveMessageKindsChanges(affectedMessageTypes);
             }
 
-            if (instance.Site == null)
+            affectedMessageTypes = instance.Update(messageHandlers, recognizedMessages, inputQueue);
+
+            var result = 
+                GenerateInstanceLocationUpdated(instanceId, instance.Site, instance.Site, instance.InputQueue, inputQueue)
+                    .Concat(DeriveMessageKindsChanges(affectedMessageTypes));
+
+            if (instance.Site != null)
             {
-                affectedMessageTypes = instance.Update(messageHandlers, recognizedMessages);
-                return DeriveMessageKindsChanges(affectedMessageTypes);
+                var previousHandlers = DeriveMessageHandlers(instance.Site);
+                result = result.Concat(ComputeMessageHandlerChanges(instance.Site, previousHandlers, DeriveMessageHandlers(instance.Site)));
             }
 
-            //Instance already assigned to a site
-            var previousHandlers = DeriveMessageHandlers(instance.Site);
-            affectedMessageTypes = instance.Update(messageHandlers, recognizedMessages);
-            return DeriveMessageKindsChanges(affectedMessageTypes)
-                .Concat(ComputeMessageHandlerChanges(instance.Site, previousHandlers, DeriveMessageHandlers(instance.Site)));
+            return result;
         }
 
         public void ValidateSubscribe(string messageType, string handlerType)
@@ -185,11 +187,17 @@ namespace ExactlyOnce.Routing.Controller.Model
                 : firstValue;
         }
 
-        IEnumerable<IEvent> GenerateInstanceLocationUpdated(string instanceId, string previousSite, string currentSite)
+        IEnumerable<IEvent> GenerateInstanceLocationUpdated(string instanceId, string previousSite, string currentSite, string previousQueue, string currentQueue)
         {
-            if (previousSite != currentSite)
+            if (currentSite == null || currentQueue == null)
             {
-                yield return new EndpointInstanceLocationUpdated(Name, instanceId, currentSite);
+                //We don't publish event if site or queue is not yet assigned
+                yield break;
+            }
+
+            if (previousSite != currentSite || previousQueue != currentQueue)
+            {
+                yield return new EndpointInstanceLocationUpdated(Name, instanceId, currentSite, currentQueue);
             }
         }
 

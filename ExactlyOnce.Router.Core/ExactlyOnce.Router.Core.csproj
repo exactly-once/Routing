@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <!--<SignAssembly>true</SignAssembly>-->
+    <!--<AssemblyOriginatorKeyFile>..\ExactlyOnce.Router.snk</AssemblyOriginatorKeyFile>-->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);NU5125</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--<PackageReference Include="MinVer" Version="1.0.0-*" PrivateAssets="All" />-->
+    <PackageReference Include="NServiceBus" Version="7.3.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <Description>Use NServiceBus infrastructure to send raw messages</Description>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="router.png" Pack="true" PackagePath=""/>
+  </ItemGroup>
+</Project>

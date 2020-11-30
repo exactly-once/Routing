@@ -1,9 +1,7 @@
 ﻿using System.Linq;
-using Azure.Storage.Blobs;
 using ExactlyOnce.Routing.NServiceBus;
 using NServiceBus.Features;
 using NServiceBus.Hosting;
-using NServiceBus.Routing;
 using NServiceBus.Transport;
 using NServiceBus.Unicast;
 
@@ -80,14 +78,22 @@ namespace NServiceBus
                         return MessageKind.Message;
                     });
 
-                return new RoutingTableManager(settings.ControllerUrl, settings.ControllerContainerClient, settings.RouterName, settings.SiteName, context.Settings.EndpointName(), hostInfo.HostId.ToString(), messageKindMap, messageHandlersMap);
+                return new RoutingTableManager(settings.ControllerUrl, 
+                    settings.ControllerContainerClient, 
+                    settings.RoutingPolicies, 
+                    settings.DistributionPolicies, 
+                    settings.RouterName, 
+                    settings.SiteName, 
+                    context.Settings.EndpointName(), 
+                    context.Settings.LocalAddress(),
+                    hostInfo.HostId.ToString(), 
+                    messageKindMap, 
+                    messageHandlersMap,
+                    b.Build<IDispatchMessages>());
             }, DependencyLifecycle.SingleInstance);
             context.RegisterStartupTask(b => b.Build<RoutingTableManager>());
 
-            context.Container.ConfigureComponent(b => new RoutingLogic(b.Build<IRoutingTable>(),
-                context.Settings.Get<EndpointInstances>(),
-                context.Settings.Get<DistributionPolicy>(),
-                instance => transportInfrastructure.ToTransportAddress(LogicalAddress.CreateRemoteAddress(instance))), DependencyLifecycle.SingleInstance);
+            context.Container.ConfigureComponent(b => new RoutingLogic(b.Build<IRoutingTable>()), DependencyLifecycle.SingleInstance);
 
             context.Pipeline.Replace("UnicastPublishRouterConnector", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
             context.Pipeline.Replace("MulticastPublishRouterBehavior", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));

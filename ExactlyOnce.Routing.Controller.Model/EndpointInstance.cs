@@ -9,15 +9,17 @@ namespace ExactlyOnce.Routing.Controller.Model
     public class EndpointInstance
     {
         [JsonConstructor]
-        public EndpointInstance(string instanceId, List<MessageHandlerInstance> messageHandlers, Dictionary<string, MessageKind> recognizedMessages, string site)
+        public EndpointInstance(string instanceId, string inputQueue, List<MessageHandlerInstance> messageHandlers, Dictionary<string, MessageKind> recognizedMessages, string site)
         {
             InstanceId = instanceId;
+            InputQueue = inputQueue;
             MessageHandlers = messageHandlers;
             RecognizedMessages = recognizedMessages;
             Site = site;
         }
 
         public string InstanceId { get; }
+        public string InputQueue { get; private set; }
         public string Site { get; private set; }
         public List<MessageHandlerInstance> MessageHandlers { get; private set; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; }
@@ -27,9 +29,12 @@ namespace ExactlyOnce.Routing.Controller.Model
             Site = site;
         }
 
-        public List<string> Update(List<MessageHandlerInstance> messageHandlers, Dictionary<string, MessageKind> newRecognizedMessages)
+        public List<string> Update(List<MessageHandlerInstance> messageHandlers,
+            Dictionary<string, MessageKind> newRecognizedMessages, 
+            string inputQueue)
         {
             MessageHandlers = messageHandlers;
+            InputQueue = inputQueue;
             var modifications = new List<Action<Dictionary<string, MessageKind>>>();
             var modifiedKeys = new List<string>();
 

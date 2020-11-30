@@ -31,7 +31,6 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             if (!subscriptions.TryGetValue(e.GetType(), out var subs))
             {
                 return Enumerable.Empty<EventMessage>();
-                //TODO Uncomment this line when we have all subscription set up
                 //throw new Exception($"No function subscribes to {e.GetType()}");
             }
 

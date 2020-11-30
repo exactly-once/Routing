@@ -17,7 +17,7 @@ namespace ExactlyOnce.Routing.AzureController
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
             var messages = await execute.Once(
-                r => r.ConfigureEndpointSiteRouting(request.EndpointName, request.Policy),
+                r => r.ConfigureSiteRouting(request.EndpointName, request.Policy),
                 () => throw new Exception("Routing table not yet created"));
 
             foreach (var eventMessage in messages)
@@ -32,7 +32,7 @@ namespace ExactlyOnce.Routing.AzureController
         {
             public string ReportId { get; set; }
             public string EndpointName { get; set; }
-            public EndpointSiteRoutingPolicy Policy { get; set; }
+            public string Policy { get; set; }
         }
     }
 }

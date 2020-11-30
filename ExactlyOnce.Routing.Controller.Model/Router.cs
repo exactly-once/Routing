@@ -12,6 +12,12 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
         }
 
+        // Used by event loop
+        // ReSharper disable once UnusedMember.Global
+        public Router()
+        {
+        }
+
         [JsonConstructor]
         public Router(string name, Dictionary<string, RouterInstance> instances, List<string> interfacesToSites)
         {
@@ -24,17 +30,23 @@ namespace ExactlyOnce.Routing.Controller.Model
         public List<string> InterfacesToSites { get; private set; }
         public Dictionary<string, RouterInstance> Instances { get;  }
 
-        public IEnumerable<IEvent> OnStartup(string instanceId, List<string> siteInterfaces)
+        public IEnumerable<IEvent> OnStartup(string instanceId, Dictionary<string, string> siteInterfaces)
         {
+            if (!Instances.ContainsKey(instanceId) 
+                || InterfacesHaveChanged(Instances[instanceId].InterfacesToSites, siteInterfaces))
+            {
+                yield return new RouterInstanceUpdated(Name, instanceId, siteInterfaces);
+            }
+
             var newRouter = !Instances.Any();
             var newInstance = new RouterInstance(instanceId, siteInterfaces);
             Instances[instanceId] = newInstance;
 
-            var uniqueSites = Instances.Values.SelectMany(x => x.InterfacesToSites).Distinct();
+            var uniqueSites = Instances.Values.SelectMany(x => x.InterfacesToSites.Keys).Distinct();
 
             //Only site interfaces supported by all instances of the router are reported
             var updatedSiteInterfaces = uniqueSites
-                .Where(x => Instances.Values.All(i => i.InterfacesToSites.Contains(x)))
+                .Where(x => Instances.Values.All(i => i.InterfacesToSites.ContainsKey(x)))
                 .OrderBy(x => x)
                 .ToList();
 
@@ -51,6 +63,12 @@ namespace ExactlyOnce.Routing.Controller.Model
             }
 
             InterfacesToSites = updatedSiteInterfaces;
+        }
+
+        static bool InterfacesHaveChanged(Dictionary<string, string> previousInterfaces, Dictionary<string, string> newInterfaces)
+        {
+            return previousInterfaces.Count != newInterfaces.Count
+                   || previousInterfaces.Except(newInterfaces).Any();
         }
 
         /*

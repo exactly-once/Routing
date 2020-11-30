@@ -13,6 +13,14 @@ namespace ExactlyOnce.Routing.Controller.Model
             Rules = rules;
         }
 
+        //Used by event loop
+        public Topology()
+            : this(
+                new Dictionary<string, RouterInfo>(), 
+                new List<RouterInterfaceRule>())
+        {
+        }
+
         public Dictionary<string, RouterInfo> Routers { get; }
         public List<RouterInterfaceRule> Rules { get; }
 

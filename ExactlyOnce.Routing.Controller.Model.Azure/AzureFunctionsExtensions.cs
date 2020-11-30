@@ -74,7 +74,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
         public string ToInvokeString()
         {
-            throw new NotImplementedException();
+            throw new Exception("Not implemented");
         }
 
         public Type Type { get; }

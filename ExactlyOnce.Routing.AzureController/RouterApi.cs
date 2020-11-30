@@ -33,7 +33,7 @@ namespace ExactlyOnce.Routing.AzureController
             public string ReportId { get; set; }
             public string RouterName { get; set; }
             public string InstanceId { get; set; }
-            public List<string> SiteInterfaces { get; set; }
+            public Dictionary<string, string> SiteInterfaces { get; set; }
         }
     }
 }

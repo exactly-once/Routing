@@ -8,43 +8,54 @@ namespace ExactlyOnce.Routing.Controller.Model
     public class RoutingTable : IEventHandler<MessageRoutingChanged>,
         IEventHandler<RouteChanged>,
         IEventHandler<DestinationSiteToNextHopMapChanged>,
-        IEventHandler<EndpointInstanceLocationUpdated>
+        IEventHandler<EndpointInstanceLocationUpdated>,
+        IEventHandler<RouterInstanceUpdated>
     {
         public int Version { get; private set; }
         //Each entry is guaranteed to refer to a different handler type
         public Dictionary<string, List<RoutingTableEntry>> Entries { get; }
         public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; private set; }
-        public Dictionary<string, EndpointSiteRoutingPolicy> SiteRoutingPolicy { get; }
+        public Dictionary<string, string> SiteRoutingPolicy { get; }
+        public Dictionary<string, string> DistributionPolicy { get; }
         public Dictionary<string, List<EndpointInstanceId>> Sites { get; }
+        public Dictionary<string, List<RouterInstanceInfo>> RouterInstances { get; }
         public List<Redirection> Redirections { get; }
 
         public RoutingTable()
             : this(0, new Dictionary<string, List<RoutingTableEntry>>(),
                 new Dictionary<string, Dictionary<string, DestinationSiteInfo>>(),
-                new Dictionary<string, EndpointSiteRoutingPolicy>(), new Dictionary<string, List<EndpointInstanceId>> (), new List<Redirection>())
+                new Dictionary<string, string>(), 
+                new Dictionary<string, string>(), 
+                new Dictionary<string, List<EndpointInstanceId>> (), 
+                new List<Redirection>(), 
+                new Dictionary<string, List<RouterInstanceInfo>>())
         {
         }
 
         [JsonConstructor]
         public RoutingTable(int version, Dictionary<string, List<RoutingTableEntry>> entries,
             Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping,
-            Dictionary<string, EndpointSiteRoutingPolicy> siteRoutingPolicy,
+            Dictionary<string, string> siteRoutingPolicy,
+            Dictionary<string, string> distributionPolicy,
             Dictionary<string, List<EndpointInstanceId>> sites,
-            List<Redirection> redirections)
+            List<Redirection> redirections, 
+            Dictionary<string, List<RouterInstanceInfo>> routerInstances)
         {
             Entries = entries;
             DestinationSiteToNextHopMapping = destinationSiteToNextHopMapping;
             SiteRoutingPolicy = siteRoutingPolicy;
+            DistributionPolicy = distributionPolicy;
             Version = version;
             Sites = sites;
             Redirections = redirections;
+            RouterInstances = routerInstances;
         }
 
-        public IEnumerable<IEvent> ConfigureEndpointSiteRouting(string endpoint, EndpointSiteRoutingPolicy? policy)
+        public IEnumerable<IEvent> ConfigureSiteRouting(string endpoint, string policyName)
         {
-            if (policy.HasValue)
+            if (policyName != null)
             {
-                SiteRoutingPolicy[endpoint] = policy.Value;
+                SiteRoutingPolicy[endpoint] = policyName;
             }
             else
             {
@@ -57,7 +68,29 @@ namespace ExactlyOnce.Routing.Controller.Model
 
             foreach (var entry in existingEntries)
             {
-                entry.UpdateSiteRoutingPolicy(policy ?? EndpointSiteRoutingPolicy.RouteToOldest);
+                entry.UpdateSiteRoutingPolicy(policyName);
+            }
+            return GenerateChangeEvent();
+        }
+
+        public IEnumerable<IEvent> ConfigureDistribution(string endpoint, string policyName)
+        {
+            if (policyName != null)
+            {
+                DistributionPolicy[endpoint] = policyName;
+            }
+            else
+            {
+                DistributionPolicy.Remove(endpoint);
+            }
+
+            var existingEntries = Entries.Values
+                .SelectMany(x => x)
+                .Where(e => e.Endpoint == endpoint);
+
+            foreach (var entry in existingEntries)
+            {
+                entry.UpdateDistributionPolicy(policyName);
             }
             return GenerateChangeEvent();
         }
@@ -69,11 +102,13 @@ namespace ExactlyOnce.Routing.Controller.Model
                 routes = new List<RoutingTableEntry>();
                 Entries[messageType] = routes;
             }
-            if (!SiteRoutingPolicy.TryGetValue(endpoint, out var policy))
-            {
-                policy = EndpointSiteRoutingPolicy.RouteToOldest;
-            }
-            routes.Add(new RoutingTableEntry(handlerType, endpoint, sites, policy));
+
+            SiteRoutingPolicy.TryGetValue(endpoint, out var routingPolicy);
+            DistributionPolicy.TryGetValue(endpoint, out var distributionPolicy);
+            routes.Add(new RoutingTableEntry(handlerType, endpoint, sites, routingPolicy, distributionPolicy));
+
+            //When a route is added redirection is removed (if existed)
+            Redirections.RemoveAll(x => x.FromHandler == handlerType && x.FromEndpoint == endpoint);
         }
 
         void OnRouteRemoved(string messageType, string handlerType, string endpoint, string replacingHandler, string replacingEndpoint)
@@ -93,7 +128,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         IEnumerable<IEvent> GenerateChangeEvent()
         {
             Version++;
-            yield return new RoutingTableChanged(Version, Entries, DestinationSiteToNextHopMapping, Sites, Redirections);
+            yield return new RoutingTableChanged(Version, Entries, DestinationSiteToNextHopMapping, DistributionPolicy, Sites, Redirections, RouterInstances);
         }
 
         public IEnumerable<IEvent> Handle(RouteChanged e)
@@ -131,18 +166,48 @@ namespace ExactlyOnce.Routing.Controller.Model
                 Sites[e.Site] = site;
             }
 
-            if (!site.Any(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint))
+            var existingInstanceId = site.FirstOrDefault(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint);
+
+            if (existingInstanceId == null)
             {
-                site.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId));
+                site.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId, e.InputQueue));
+            }
+            else
+            {
+                existingInstanceId.UpdateInputQueue(e.InputQueue);
             }
 
             if (!DestinationSiteToNextHopMapping.ContainsKey(e.Site))
             {
                 var destinationSiteInfos = new Dictionary<string, DestinationSiteInfo>
                 {
-                    [e.Site] = new DestinationSiteInfo(e.Site, e.Site, 0)
+                    [e.Site] = new DestinationSiteInfo(null, null, 0)
                 };
                 DestinationSiteToNextHopMapping[e.Site] = destinationSiteInfos;
+            }
+
+            return GenerateChangeEvent();
+        }
+
+        public IEnumerable<IEvent> Handle(RouterInstanceUpdated e)
+        {
+            if (!RouterInstances.TryGetValue(e.Router, out var instances))
+            {
+                instances = new List<RouterInstanceInfo>();
+                RouterInstances[e.Router] = instances;
+            }
+            else
+            {
+                var existingInstance = instances.FirstOrDefault(x => x.InstanceId == e.InstanceId);
+                if (existingInstance != null)
+                {
+                    existingInstance.Update(e.SiteToQueueMap);
+                }
+                else
+                {
+                    var instance = new RouterInstanceInfo(e.InstanceId, e.SiteToQueueMap);
+                    instances.Add(instance);
+                }
             }
 
             return GenerateChangeEvent();
