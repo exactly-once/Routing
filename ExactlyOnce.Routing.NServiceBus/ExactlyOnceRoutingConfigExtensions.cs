@@ -6,12 +6,14 @@ using NServiceBus.Features;
 // ReSharper disable once CheckNamespace
 namespace NServiceBus
 {
+    //TODO: Self-hosted version (SQL, SignalR Core)
+    //TODO: Acceptance tests
+    //TODO: Mixed-mode and migration
     //TODO: Authorization
+    //TODO: Visualizations (graphviz)
     //TODO: DLQ proxy for ServiceControl
     //TODO: Partitioning of Outbox collection
-    //TODO: Mixed-mode and migration
     //TODO: Production-quality command line tool
-    //TODO: On-premises version (SQL, SignalR Core)
 
     /// <summary>
     /// Extensions for configuring blueprint-based routing functionality.

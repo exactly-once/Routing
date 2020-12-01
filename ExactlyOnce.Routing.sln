@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Router", "Exact
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyRouter", "Sample\MyRouter\MyRouter.csproj", "{950EF862-44AE-4CAF-9275-BD9F03CD5C7F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.SelfHostedController", "ExactlyOnce.Routing.SelfHostedController\ExactlyOnce.Routing.SelfHostedController.csproj", "{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,10 @@ Global
 		{950EF862-44AE-4CAF-9275-BD9F03CD5C7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{950EF862-44AE-4CAF-9275-BD9F03CD5C7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{950EF862-44AE-4CAF-9275-BD9F03CD5C7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

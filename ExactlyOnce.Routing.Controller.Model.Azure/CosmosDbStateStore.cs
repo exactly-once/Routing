@@ -10,8 +10,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public class CosmosDbStateStore : IStateStore
     {
-        Database database;
-        JsonSerializer serializer = new JsonSerializer();
+        readonly Database database;
+        readonly JsonSerializer serializer = new JsonSerializer();
 
         public CosmosDbStateStore(CosmosClient cosmosClient, string databaseId)
         {

@@ -11,7 +11,6 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
   </ItemGroup>
   <ItemGroup>
-    <!--<ProjectReference Include="..\ExactlyOnce.AzureFunctions\ExactlyOnce.AzureFunctions.csproj" />-->
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model.Azure\ExactlyOnce.Routing.Controller.Model.Azure.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model\ExactlyOnce.Routing.Controller.Model.csproj" />
   </ItemGroup>
