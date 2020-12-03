@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model\ExactlyOnce.Routing.Controller.Model.csproj" />
+  </ItemGroup>
+
+</Project>

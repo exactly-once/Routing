@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
@@ -134,7 +135,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             {
                 var client = configuration.CosmosClientFactory();
 
-                var stateStore = new CosmosDbStateStore(client, outboxConfiguration.DatabaseId);
+                var stateStore = new StateStore(client, outboxConfiguration.DatabaseId);
 
                 var outboxStore = new OutboxStore(client, outboxConfiguration);
                 return new ExactlyOnceProcessor(outboxStore, stateStore);

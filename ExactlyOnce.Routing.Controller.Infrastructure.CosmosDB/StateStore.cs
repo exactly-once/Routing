@@ -3,19 +3,28 @@ using System.IO;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 
-namespace ExactlyOnce.Routing.Controller.Model.Azure
+namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
 {
-    public class CosmosDbStateStore : IStateStore
+    public class StateStore : IStateStore
     {
-        readonly Database database;
+        readonly CosmosClient cosmosClient;
+        readonly string databaseId;
+        Database database;
         readonly JsonSerializer serializer = new JsonSerializer();
 
-        public CosmosDbStateStore(CosmosClient cosmosClient, string databaseId)
+        public StateStore(CosmosClient cosmosClient, string databaseId)
         {
-            database = cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId).GetAwaiter().GetResult();
+            this.cosmosClient = cosmosClient;
+            this.databaseId = databaseId;
+        }
+
+        public async Task Initialize()
+        {
+            database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId).ConfigureAwait(false);
         }
 
         public async Task<(State, string)> Load(string stateId, Type stateType, CancellationToken cancellationToken = default)

@@ -23,22 +23,7 @@ namespace ExactlyOnce.Routing.AzureController
                     o.RetentionPeriod = TimeSpan.FromDays(30);
                 });
 
-                c.Subscribe<MessageRoutingState, MessageHandlerAdded>(e => e.HandledMessageType);
-                c.Subscribe<MessageRoutingState, MessageHandlerRemoved>(e => e.HandledMessageType);
-                c.Subscribe<MessageRoutingState, MessageTypeAdded>(e => e.FullName);
-                c.Subscribe<MessageRoutingState, MessageKindChanged>(e => e.FullName);
-
-                c.Subscribe<RoutingTableState, MessageRoutingChanged>(e => "Instance");
-                c.Subscribe<RoutingTableState, RouteChanged>(e => "Instance");
-                c.Subscribe<RoutingTableState, EndpointInstanceLocationUpdated>(e => "Instance");
-                c.Subscribe<RoutingTableState, RouterInstanceUpdated>(e => "Instance");
-                c.Subscribe<RoutingTableState, DestinationSiteToNextHopMapChanged>(e => "Instance");
-
-                c.Subscribe<TopologyState, RouterAdded>(e => "Instance");
-                c.Subscribe<TopologyState, RouterInterfacesChanged>(e => "Instance");
-
                 c.Subscribe<NotificationApi, RoutingTableChanged>(e => "");
-
                 c.Subscribe<RouteTableStorageApi, RoutingTableChanged>(e => "");
 
                 c.UseCosmosClient(() =>

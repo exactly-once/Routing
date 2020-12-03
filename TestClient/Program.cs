@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -79,7 +80,7 @@ namespace TestClient
             };
 
             var json = JsonConvert.SerializeObject(request);
-            var response = await client.PostAsync("api/Subscribe", new StringContent(json));
+            var response = await client.PostAsync("api/Subscribe", new StringContent(json, Encoding.UTF8, "application/json"));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);
@@ -116,7 +117,7 @@ namespace TestClient
             };
 
             var json = JsonConvert.SerializeObject(request);
-            var response = await client.PostAsync("api/Unsubscribe", new StringContent(json));
+            var response = await client.PostAsync("api/Unsubscribe", new StringContent(json, Encoding.UTF8, "application/json"));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);
@@ -145,7 +146,7 @@ namespace TestClient
             };
 
             var json = JsonConvert.SerializeObject(request);
-            var response = await client.PostAsync("api/Appoint", new StringContent(json));
+            var response = await client.PostAsync("api/Appoint", new StringContent(json, Encoding.UTF8, "application/json"));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);
@@ -174,7 +175,7 @@ namespace TestClient
             };
 
             var json = JsonConvert.SerializeObject(request);
-            var response = await client.PostAsync("api/Dismiss", new StringContent(json));
+            var response = await client.PostAsync("api/Dismiss", new StringContent(json, Encoding.UTF8, "application/json"));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);
@@ -200,7 +201,7 @@ namespace TestClient
             };
 
             var json = JsonConvert.SerializeObject(request);
-            var response = await client.PostAsync("api/ConfigureEndpointSiteRouting", new StringContent(json));
+            var response = await client.PostAsync("api/ConfigureEndpointSiteRouting", new StringContent(json, Encoding.UTF8, "application/json"));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);
@@ -223,6 +224,7 @@ namespace TestClient
                 return Task.CompletedTask;
             }
             connection = new HubConnectionBuilder().WithUrl("http://localhost:7071/api").Build();
+            //connection = new HubConnectionBuilder().WithUrl("https://localhost:44378/").WithAutomaticReconnect().Build();
             connection.On<RoutingTableUpdated>("routeTableUpdated", x =>
             {
                 var table = JsonConvert.DeserializeObject<RoutingTable>(x.JsonContent);
@@ -252,7 +254,7 @@ namespace TestClient
             };
 
             var json = JsonConvert.SerializeObject(request);
-            var response = await httpClient.PostAsync("api/ProcessEndpointHello", new StringContent(json));
+            var response = await httpClient.PostAsync("api/ProcessEndpointHello", new StringContent(json, Encoding.UTF8, "application/json"));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);
@@ -299,7 +301,7 @@ namespace TestClient
             };
 
             var json = JsonConvert.SerializeObject(request);
-            var response = await httpClient.PostAsync("api/ProcessEndpointReport", new StringContent(json));
+            var response = await httpClient.PostAsync("api/ProcessEndpointReport", new StringContent(json, Encoding.UTF8, "application/json"));
             if (!response.IsSuccessStatusCode)
             {
                 Console.WriteLine(response.ReasonPhrase);

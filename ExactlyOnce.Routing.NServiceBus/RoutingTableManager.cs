@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
@@ -129,7 +130,8 @@ namespace ExactlyOnce.Routing.NServiceBus
             {
                 try
                 {
-                    var response = await httpClient.PostAsync("api/ProcessEndpointHello", new StringContent(payloadJson));
+                    var response = await httpClient.PostAsync("api/ProcessEndpointHello", 
+                        new StringContent(payloadJson, Encoding.UTF8, "application/json"));
                     if (response.IsSuccessStatusCode)
                     {
                         log.Info("Endpoint registered its site with the routing controller.");
@@ -312,7 +314,8 @@ namespace ExactlyOnce.Routing.NServiceBus
             {
                 try
                 {
-                    var response = await httpClient.PostAsync("api/ProcessEndpointReport", new StringContent(payloadJson));
+                    var response = await httpClient.PostAsync("api/ProcessEndpointReport", 
+                        new StringContent(payloadJson, Encoding.UTF8, "application/json"));
                     if (response.IsSuccessStatusCode)
                     {
                         log.Info("Endpoint registered with the routing controller.");

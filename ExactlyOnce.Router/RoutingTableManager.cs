@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
@@ -9,7 +10,6 @@ using ExactlyOnce.Routing.Endpoint.Model;
 using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
 using NServiceBus.Logging;
-using IDistributionPolicy = ExactlyOnce.Routing.Endpoint.Model.IDistributionPolicy;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace ExactlyOnce.Router
@@ -88,7 +88,8 @@ namespace ExactlyOnce.Router
 
             try
             {
-                var response = await httpClient.PostAsync("api/ProcessEndpointHello", new StringContent(payloadJson));
+                var response = await httpClient.PostAsync("api/ProcessEndpointHello", 
+                    new StringContent(payloadJson, Encoding.UTF8, "application/json"));
                 if (response.IsSuccessStatusCode)
                 {
                     log.Info($"Endpoint {endpointName} registered its site with the routing controller.");
@@ -224,7 +225,8 @@ namespace ExactlyOnce.Router
             {
                 try
                 {
-                    var response = await httpClient.PostAsync("api/ProcessRouterReport", new StringContent(payloadJson));
+                    var response = await httpClient.PostAsync("api/ProcessRouterReport", 
+                        new StringContent(payloadJson, Encoding.UTF8, "application/json"));
                     if (response.IsSuccessStatusCode)
                     {
                         log.Info("Endpoint registered with the routing controller.");

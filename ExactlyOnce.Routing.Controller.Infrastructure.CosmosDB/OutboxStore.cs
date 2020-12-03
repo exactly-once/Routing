@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
-    public class OutboxStore
+    public class OutboxStore : IOutboxStore
     {
         OutboxConfiguration configuration;
 
@@ -32,7 +32,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             Initialize().GetAwaiter().GetResult();
         }
 
-        async Task Initialize()
+        public async Task Initialize()
         {
             database = await cosmosClient.CreateDatabaseIfNotExistsAsync(configuration.DatabaseId)
                 .ConfigureAwait(false);

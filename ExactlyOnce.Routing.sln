@@ -13,7 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Router.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Tests", "ExactlyOnce.Routing.Tests\ExactlyOnce.Routing.Tests.csproj", "{3BFECC54-5B7B-4A15-911C-2B95CF8561EF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Controller.Model.Azure", "ExactlyOnce.Routing.Controller.Model.Azure\ExactlyOnce.Routing.Controller.Model.Azure.csproj", "{D149C0D0-EE33-488E-AD89-96492B09FEEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Controller.Infrastructure", "ExactlyOnce.Routing.Controller.Model.Azure\ExactlyOnce.Routing.Controller.Infrastructure.csproj", "{D149C0D0-EE33-488E-AD89-96492B09FEEF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestClient", "TestClient\TestClient.csproj", "{28AAA94A-DF9A-4DB4-95CF-170AE3C753ED}"
 EndProject
@@ -36,6 +36,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyRouter", "Sample\MyRouter\MyRouter.csproj", "{950EF862-44AE-4CAF-9275-BD9F03CD5C7F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.SelfHostedController", "ExactlyOnce.Routing.SelfHostedController\ExactlyOnce.Routing.SelfHostedController.csproj", "{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB", "ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj", "{0F3C61D3-94C1-43EE-B853-5F0004E062BA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -107,6 +109,10 @@ Global
 		{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F3C61D3-94C1-43EE-B853-5F0004E062BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F3C61D3-94C1-43EE-B853-5F0004E062BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F3C61D3-94C1-43EE-B853-5F0004E062BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F3C61D3-94C1-43EE-B853-5F0004E062BA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

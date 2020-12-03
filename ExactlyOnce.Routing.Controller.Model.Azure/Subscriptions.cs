@@ -8,6 +8,23 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     {
         readonly Dictionary<Type, List<Subscription>> subscriptions = new Dictionary<Type, List<Subscription>>();
 
+        public Subscriptions()
+        {
+            Subscribe<MessageRoutingState, MessageHandlerAdded>(e => e.HandledMessageType);
+            Subscribe<MessageRoutingState, MessageHandlerRemoved>(e => e.HandledMessageType);
+            Subscribe<MessageRoutingState, MessageTypeAdded>(e => e.FullName);
+            Subscribe<MessageRoutingState, MessageKindChanged>(e => e.FullName);
+
+            Subscribe<RoutingTableState, MessageRoutingChanged>(e => "Instance");
+            Subscribe<RoutingTableState, RouteChanged>(e => "Instance");
+            Subscribe<RoutingTableState, EndpointInstanceLocationUpdated>(e => "Instance");
+            Subscribe<RoutingTableState, RouterInstanceUpdated>(e => "Instance");
+            Subscribe<RoutingTableState, DestinationSiteToNextHopMapChanged>(e => "Instance");
+
+            Subscribe<TopologyState, RouterAdded>(e => "Instance");
+            Subscribe<TopologyState, RouterInterfacesChanged>(e => "Instance");
+        }
+
         public void Subscribe<TState, TEvent>(Func<TEvent, string> selectDestinationCallback) 
             where TEvent : IEvent
         {

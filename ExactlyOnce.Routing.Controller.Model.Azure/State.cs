@@ -6,7 +6,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 {
     public abstract class State
     {
-        [JsonProperty("id")] public string Id { get; internal set; }
+        [JsonProperty("id")] public string Id { get; set; }
 
         [JsonProperty("_transactionId")] public Guid? TxId { get; internal set; }
 

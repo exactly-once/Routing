@@ -66,6 +66,7 @@ namespace ExactlyOnce.Routing.AzureController
                 return;
             }
 
+            blob.Metadata["Version"] = routingTableChangedEvent.Version.ToString();
             await Upload(routingTableChangedEvent, blob, AccessCondition.GenerateIfMatchCondition(blob.Properties.ETag))
                 .ConfigureAwait(false);
         }

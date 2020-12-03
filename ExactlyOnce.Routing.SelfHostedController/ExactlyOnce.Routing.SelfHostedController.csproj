@@ -1,11 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <AssemblyName>RoutingController</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="NServiceBus.Extensions.Hosting" Version="1.*" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.8.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.4.2" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model.Azure\ExactlyOnce.Routing.Controller.Model.Azure.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Router.Core\ExactlyOnce.Router.Core.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model.Azure\ExactlyOnce.Routing.Controller.Infrastructure.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model\ExactlyOnce.Routing.Controller.Model.csproj" />
   </ItemGroup>
 </Project>
