@@ -74,6 +74,19 @@ namespace ExactlyOnce.Routing.Client
             return Post("api/ProcessEndpointHello", payload, "registering endpoint instance's site");
         }
 
+        public Task Subscribe(string endpointName, Type handlerType, Type replacedHandlerType, Type messageType,
+            string requestId)
+        {
+            var handlerTypeName = $"{handlerType.FullName}, {handlerType.Assembly.GetName().Name}";
+            var replacedHandlerTypeName = replacedHandlerType != null
+                ? $"{replacedHandlerType.FullName}, {replacedHandlerType.Assembly.GetName().Name}"
+                : null;
+
+            var messageTypeName = messageType.FullName;
+
+            return Subscribe(endpointName, handlerTypeName, replacedHandlerTypeName, messageTypeName, requestId);
+        }
+
         public Task Subscribe(string endpointName, string handlerType, string replacedHandlerType, string messageType, string requestId)
         {
             var request = new SubscribeRequest
