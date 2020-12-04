@@ -11,7 +11,7 @@ using NServiceBus.Transport;
 
 namespace ExactlyOnce.Routing.SelfHostedController
 {
-    static class HostBuilderFactory
+    public static class HostBuilderFactory
     {
         public static IHostBuilder CreateHostBuilder<T>(
             string queueName,
@@ -28,7 +28,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
                     subscriptions.Subscribe<RouteTableStorageHandler, RoutingTableChanged>(e => "");
                     subscriptions.Subscribe<SignalRHandler, RoutingTableChanged>(e => "");
                     collection.AddSingleton(new OnceExecutorFactory(new ExactlyOnceProcessor(outboxStore, stateStore), subscriptions));
-
+                    collection.AddSingleton(stateStore);
                     collection.AddSingleton(sp =>
                         new NServiceBusRawHostedService<T>(queueName, transportCustomization, async () =>
                         {

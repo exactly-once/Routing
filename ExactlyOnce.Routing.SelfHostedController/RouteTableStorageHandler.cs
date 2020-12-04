@@ -56,11 +56,8 @@ namespace ExactlyOnce.Routing.SelfHostedController
             {
                 IfNoneMatch = ETag.All
             };
-            var metadata = new Dictionary<string, string>
-            {
-                ["Version"] = e.Version.ToString()
-            };
-            return Upload(e, metadata, condition, blobClient);
+            
+            return Upload(e, condition, blobClient);
         }
 
         static async Task Update(Response<BlobProperties> props, RoutingTableChanged e, BlobClient blobClient)
@@ -73,11 +70,16 @@ namespace ExactlyOnce.Routing.SelfHostedController
             }
 
             var condition = new BlobRequestConditions {IfMatch = props.Value.ETag};
-            await Upload(e, new Dictionary<string, string>(), condition, blobClient).ConfigureAwait(false);
+            
+            await Upload(e, condition, blobClient).ConfigureAwait(false);
         }
 
-        static async Task Upload(RoutingTableChanged e, Dictionary<string, string> metadata, BlobRequestConditions conditions, BlobClient blob)
+        static async Task Upload(RoutingTableChanged e, BlobRequestConditions conditions, BlobClient blob)
         {
+            var metadata = new Dictionary<string, string>
+            {
+                ["Version"] = e.Version.ToString()
+            };
             using (var stream = Memory.Manager.GetStream())
             {
                 await using (var streamWriter = new StreamWriter(stream, leaveOpen: true))

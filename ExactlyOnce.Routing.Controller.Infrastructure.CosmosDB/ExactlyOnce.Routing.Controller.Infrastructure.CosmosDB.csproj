@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model.Azure\ExactlyOnce.Routing.Controller.Infrastructure.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure\ExactlyOnce.Routing.Controller.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

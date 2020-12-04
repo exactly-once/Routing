@@ -47,7 +47,6 @@ public class EndpointUtils
 
         var routingSettings = config.UseExactlyOnceRouting(new BlobContainerClient("UseDevelopmentStorage=true", "routing-table"),
             "http://localhost:7071/api");
-        //"https://localhost:44378/");
 
         routingSettings.ConnectToRouter("MyRouter");
 

@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NServiceBus" Version="7.4.4" />
+    <PackageReference Include="NServiceBus.AcceptanceTesting" Version="7.4.4" />
+    <PackageReference Include="NUnit" Version="3.12.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.8.0" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExactlyOnce.Router.Core\ExactlyOnce.Router.Core.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Router\ExactlyOnce.Router.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.Client\ExactlyOnce.Routing.Client.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.NServiceBus\ExactlyOnce.Routing.NServiceBus.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.SelfHostedController\ExactlyOnce.Routing.SelfHostedController.csproj" />
+  </ItemGroup>
+</Project>

@@ -9,11 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Endpoin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Controller.Model", "ExactlyOnce.Routing.Controller.Model\ExactlyOnce.Routing.Controller.Model.csproj", "{B3DCCE11-9B3E-4926-B7ED-0510A052ECDF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Router.Model", "ExactlyOnce.Routing.Router.Model\ExactlyOnce.Routing.Router.Model.csproj", "{FAA7CB5C-D4E1-4FC8-B4D6-F2E8B2BF2B69}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Tests", "ExactlyOnce.Routing.Tests\ExactlyOnce.Routing.Tests.csproj", "{3BFECC54-5B7B-4A15-911C-2B95CF8561EF}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Controller.Infrastructure", "ExactlyOnce.Routing.Controller.Model.Azure\ExactlyOnce.Routing.Controller.Infrastructure.csproj", "{D149C0D0-EE33-488E-AD89-96492B09FEEF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestClient", "TestClient\TestClient.csproj", "{28AAA94A-DF9A-4DB4-95CF-170AE3C753ED}"
 EndProject
@@ -33,11 +29,19 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Router.Core", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Router", "ExactlyOnce.Router\ExactlyOnce.Router.csproj", "{5106F84B-6654-4D32-92D6-281DF3C3F98A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyRouter", "Sample\MyRouter\MyRouter.csproj", "{950EF862-44AE-4CAF-9275-BD9F03CD5C7F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyRouter", "Sample\MyRouter\MyRouter.csproj", "{950EF862-44AE-4CAF-9275-BD9F03CD5C7F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.SelfHostedController", "ExactlyOnce.Routing.SelfHostedController\ExactlyOnce.Routing.SelfHostedController.csproj", "{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.SelfHostedController", "ExactlyOnce.Routing.SelfHostedController\ExactlyOnce.Routing.SelfHostedController.csproj", "{6E0A982B-9919-4FFF-A4B1-CF6030F440B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB", "ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj", "{0F3C61D3-94C1-43EE-B853-5F0004E062BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB", "ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj", "{0F3C61D3-94C1-43EE-B853-5F0004E062BA}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.Controller.Infrastructure", "ExactlyOnce.Routing.Controller.Infrastructure\ExactlyOnce.Routing.Controller.Infrastructure.csproj", "{349735C5-0AB8-48FC-AE50-D0AD6032031D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.AcceptanceTesting", "ExactlyOnce.Routing.AcceptanceTesting\ExactlyOnce.Routing.AcceptanceTesting.csproj", "{23A47718-151F-4352-974C-0C75C5A59F6E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.AcceptanceTests", "ExactlyOnce.Routing.AcceptanceTests\ExactlyOnce.Routing.AcceptanceTests.csproj", "{DBBB5BA7-C5B1-4934-9F12-E1A37F2DF22A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.Client", "ExactlyOnce.Routing.Client\ExactlyOnce.Routing.Client.csproj", "{EB23FB2A-869A-4B8E-AFF2-58A69A5A640D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,18 +61,10 @@ Global
 		{B3DCCE11-9B3E-4926-B7ED-0510A052ECDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3DCCE11-9B3E-4926-B7ED-0510A052ECDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3DCCE11-9B3E-4926-B7ED-0510A052ECDF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FAA7CB5C-D4E1-4FC8-B4D6-F2E8B2BF2B69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FAA7CB5C-D4E1-4FC8-B4D6-F2E8B2BF2B69}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FAA7CB5C-D4E1-4FC8-B4D6-F2E8B2BF2B69}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FAA7CB5C-D4E1-4FC8-B4D6-F2E8B2BF2B69}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3BFECC54-5B7B-4A15-911C-2B95CF8561EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3BFECC54-5B7B-4A15-911C-2B95CF8561EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3BFECC54-5B7B-4A15-911C-2B95CF8561EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3BFECC54-5B7B-4A15-911C-2B95CF8561EF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D149C0D0-EE33-488E-AD89-96492B09FEEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D149C0D0-EE33-488E-AD89-96492B09FEEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D149C0D0-EE33-488E-AD89-96492B09FEEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D149C0D0-EE33-488E-AD89-96492B09FEEF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{28AAA94A-DF9A-4DB4-95CF-170AE3C753ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{28AAA94A-DF9A-4DB4-95CF-170AE3C753ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{28AAA94A-DF9A-4DB4-95CF-170AE3C753ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -113,6 +109,22 @@ Global
 		{0F3C61D3-94C1-43EE-B853-5F0004E062BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0F3C61D3-94C1-43EE-B853-5F0004E062BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0F3C61D3-94C1-43EE-B853-5F0004E062BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{349735C5-0AB8-48FC-AE50-D0AD6032031D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{349735C5-0AB8-48FC-AE50-D0AD6032031D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{349735C5-0AB8-48FC-AE50-D0AD6032031D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{349735C5-0AB8-48FC-AE50-D0AD6032031D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23A47718-151F-4352-974C-0C75C5A59F6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23A47718-151F-4352-974C-0C75C5A59F6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23A47718-151F-4352-974C-0C75C5A59F6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23A47718-151F-4352-974C-0C75C5A59F6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBBB5BA7-C5B1-4934-9F12-E1A37F2DF22A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBBB5BA7-C5B1-4934-9F12-E1A37F2DF22A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBBB5BA7-C5B1-4934-9F12-E1A37F2DF22A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBBB5BA7-C5B1-4934-9F12-E1A37F2DF22A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EB23FB2A-869A-4B8E-AFF2-58A69A5A640D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EB23FB2A-869A-4B8E-AFF2-58A69A5A640D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EB23FB2A-869A-4B8E-AFF2-58A69A5A640D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EB23FB2A-869A-4B8E-AFF2-58A69A5A640D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

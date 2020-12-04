@@ -39,6 +39,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
             this.eventLoopHandler = eventLoopHandler;
             this.messageHandlers = messageHandlers.ToDictionary(x => x.GetType().FullName, x => x);
             config = RawEndpointConfiguration.Create(queueName, HandleMessage, "poison");
+            config.AutoCreateQueue();
             var extensions = config.UseTransport<T>();
             transportCustomization(extensions);
         }
