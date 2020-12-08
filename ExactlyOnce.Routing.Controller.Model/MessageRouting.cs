@@ -8,7 +8,8 @@ namespace ExactlyOnce.Routing.Controller.Model
     public class MessageRouting : IEventHandler<MessageHandlerAdded>,
         IEventHandler<MessageHandlerRemoved>,
         IEventHandler<MessageKindChanged>,
-        IEventHandler<MessageTypeAdded>
+        IEventHandler<MessageTypeAdded>,
+        IEventHandler<LegacyDestinationAdded>
     {
         [JsonConstructor]
         public MessageRouting(string messageType, List<Destination> destinations)
@@ -24,6 +25,7 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public string MessageType { get; private set; }
         public List<Destination> Destinations { get; }
+        public Dictionary<string, string> LegacyDestinations { get; }
 
         public IEnumerable<IEvent> Subscribe(string handlerType, string endpoint, string replacedHandlerType)
         {
@@ -269,6 +271,15 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
             MessageType = e.FullName;
 
+            return Enumerable.Empty<IEvent>();
+        }
+
+        public IEnumerable<IEvent> Handle(LegacyDestinationAdded e)
+        {
+            MessageType = e.MessageType;
+
+
+            
             return Enumerable.Empty<IEvent>();
         }
     }

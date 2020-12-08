@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
 using Microsoft.Azure.Cosmos;
@@ -23,7 +24,15 @@ namespace NServiceBus.AcceptanceTests
             var cosmosClient = new CosmosClient(endpointUri, primaryKey);
 
             await blobClient.DeleteBlobIfExistsAsync("routing-table.json");
-            await cosmosClient.GetDatabase("RoutingAcceptanceTests").DeleteAsync();
+            try
+            {
+                await cosmosClient.GetDatabase("RoutingAcceptanceTests").DeleteAsync();
+            }
+            catch (CosmosException)
+            {
+                //Ignore. DB did not exist.
+            }
+            await cosmosClient.CreateDatabaseAsync("RoutingAcceptanceTests", 100000);
 
             Conventions.EndpointNamingConvention = t =>
             {

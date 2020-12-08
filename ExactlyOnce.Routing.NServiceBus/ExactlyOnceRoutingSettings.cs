@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using Azure.Storage.Blobs;
 using ExactlyOnce.Routing.Endpoint.Model;
 using ExactlyOnceDistributionPolicy = ExactlyOnce.Routing.Endpoint.Model.IDistributionPolicy;
@@ -14,6 +13,8 @@ namespace NServiceBus
         internal BlobContainerClient ControllerContainerClient { get; set; }
         internal string RouterName { get; private set; }
         internal string SiteName { get; private set; }
+        public LegacyMigrationSettings LegacyMigration { get; } = new LegacyMigrationSettings();
+
         internal SiteRoutingPolicyConfiguration SiteRoutingPolicyConfiguration = new SiteRoutingPolicyConfiguration();
         internal DistributionPolicyConfiguration DistributionPolicyConfiguration = new DistributionPolicyConfiguration();
 

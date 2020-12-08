@@ -27,7 +27,7 @@ namespace ExactlyOnce.Routing.AzureController
             var messageKinds = request.RecognizedMessages ?? new Dictionary<string, MessageKind>();
 
             var messages = await execute.Once(
-                e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers),
+                e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers, request.LegacyDestinations),
                 () => new Endpoint(request.EndpointName));
 
             foreach (var message in messages)
@@ -63,6 +63,7 @@ namespace ExactlyOnce.Routing.AzureController
             public string InstanceId { get; set; }
             public Dictionary<string, string> MessageHandlers { get; set; }
             public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
+            public Dictionary<string, string> LegacyDestinations { get; set; }
         }
 
         public class EndpointHelloRequest

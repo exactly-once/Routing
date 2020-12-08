@@ -9,20 +9,27 @@ namespace ExactlyOnce.Routing.NServiceBus
 {
     class SendRoutingConnector : StageConnector<IOutgoingSendContext, IOutgoingLogicalMessageContext>
     {
-        readonly RoutingLogic router;
+        readonly RoutingLogic routingLogic;
+        readonly LegacyRoutingLogic legacyRoutingLogic;
 
-        public SendRoutingConnector(RoutingLogic router)
+        public SendRoutingConnector(RoutingLogic routingLogic, LegacyRoutingLogic legacyRoutingLogic)
         {
-            this.router = router;
+            this.routingLogic = routingLogic;
+            this.legacyRoutingLogic = legacyRoutingLogic;
         }
 
         public override async Task Invoke(IOutgoingSendContext context, Func<IOutgoingLogicalMessageContext, Task> stage)
         {
             var messageType = context.Message.MessageType;
-            var routingStrategies = router.Route(messageType, context).ToList();
+            var routingStrategies = routingLogic.Route(messageType, context).ToList();
+
             if (routingStrategies.Count == 0)
             {
-                throw new Exception($"No routes found for message {messageType.AssemblyQualifiedName}");
+                routingStrategies = legacyRoutingLogic.Route(context);
+                if (routingStrategies.Count == 0)
+                {
+                    throw new Exception($"No routes found for message {messageType.FullName}");
+                }
             }
 
             context.Headers[Headers.MessageIntent] = MessageIntentEnum.Send.ToString();

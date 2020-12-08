@@ -38,7 +38,7 @@ namespace ExactlyOnce.Routing.Endpoint.Model
         {
             if (!routingTable.Entries.TryGetValue(messageType, out var matchingEntries))
             {
-                throw new Exception($"Route not found for message type {messageType}");
+                return new List<RoutingSlip>();
             }
 
             return matchingEntries.Select(entry => CreateRoutingSlip(entry, context)).ToList();

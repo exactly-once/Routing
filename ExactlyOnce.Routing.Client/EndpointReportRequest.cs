@@ -10,5 +10,6 @@ namespace ExactlyOnce.Routing.Client
         public string InstanceId { get; set; }
         public Dictionary<string, string> MessageHandlers { get; set; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
+        public Dictionary<string, string> LegacyDestinations { get; set; }
     }
 }

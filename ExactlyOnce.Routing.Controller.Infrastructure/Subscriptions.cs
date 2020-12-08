@@ -14,6 +14,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             Subscribe<MessageRoutingState, MessageHandlerRemoved>(e => e.HandledMessageType);
             Subscribe<MessageRoutingState, MessageTypeAdded>(e => e.FullName);
             Subscribe<MessageRoutingState, MessageKindChanged>(e => e.FullName);
+            Subscribe<MessageRoutingState, LegacyDestinationAdded>(e => e.MessageType);
 
             Subscribe<RoutingTableState, MessageRoutingChanged>(e => "Instance");
             Subscribe<RoutingTableState, RouteChanged>(e => "Instance");

@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-static class DeterministicGuid
+public static class DeterministicGuid
 {
     public static Guid MakeId(string data)
     {

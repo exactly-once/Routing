@@ -44,9 +44,10 @@ namespace ExactlyOnce.Routing.Client
             }
         }
 
-        public Task Register(string endpointName, string instanceId, string inputQueue,
+        public Task RegisterEndpoint(string endpointName, string instanceId, string inputQueue,
             Dictionary<string, MessageKind> recognizedMessages,
             Dictionary<string, string> messageHandlersMap,
+            Dictionary<string, string> legacyDestinations,
             string requestId)
         {
             var payload = new EndpointReportRequest
@@ -55,6 +56,7 @@ namespace ExactlyOnce.Routing.Client
                 InputQueue = inputQueue,
                 RecognizedMessages = recognizedMessages,
                 MessageHandlers = messageHandlersMap,
+                LegacyDestinations = legacyDestinations,
                 InstanceId = instanceId,
                 ReportId = requestId
             };
@@ -62,7 +64,7 @@ namespace ExactlyOnce.Routing.Client
             return Post("api/ProcessEndpointReport", payload, "registering endpoint instance");
         }
 
-        public Task SendHelloToController(string endpointName, string instanceId, string siteName, string requestId)
+        public Task RegisterEndpointSite(string endpointName, string instanceId, string siteName, string requestId)
         {
             var payload = new EndpointHelloRequest
             {
@@ -72,6 +74,12 @@ namespace ExactlyOnce.Routing.Client
                 Site = siteName
             };
             return Post("api/ProcessEndpointHello", payload, "registering endpoint instance's site");
+        }
+
+        public Task RegisterLegacyRoute(string fromEndpoint, Type messageType, string toEndpoint, string toQueue,
+            string site, string requestId)
+        {
+
         }
 
         public Task Subscribe(string endpointName, Type handlerType, Type replacedHandlerType, Type messageType,

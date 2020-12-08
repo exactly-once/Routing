@@ -37,7 +37,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
             var messageKinds = request.RecognizedMessages ?? new Dictionary<string, MessageKind>();
 
             var messages = await executor.Once(
-                e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers),
+                e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers, request.LegacyDestinations),
                 () => new Endpoint(request.EndpointName));
 
             foreach (var eventMessage in messages)
@@ -75,6 +75,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
             public string InstanceId { get; set; }
             public Dictionary<string, string> MessageHandlers { get; set; }
             public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
+            public Dictionary<string, string> LegacyDestinations { get; set; }
         }
 
         public class EndpointHelloRequest

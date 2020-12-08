@@ -45,8 +45,8 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                 .Do("Wait for message handler to be registered", async (ctx, client) =>
                 {
                     var handlers = await client.GetDestinations(typeof(MyEvent).FullName);
-                    if (handlers == null || handlers.Destinations.Any(x =>
-                        x.HandlerType == typeof(Subscriber.MyEventHandler).AssemblyQualifiedName))
+                    if (handlers == null || !handlers.Destinations.Any(x =>
+                        x.HandlerType.Contains(nameof(Subscriber.MyEventHandler))))
                     {
                         return false;
                     }

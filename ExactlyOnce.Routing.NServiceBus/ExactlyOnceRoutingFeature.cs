@@ -1,7 +1,9 @@
 ﻿using System.Linq;
+using ExactlyOnce.Routing.Client;
 using ExactlyOnce.Routing.NServiceBus;
 using NServiceBus.Features;
 using NServiceBus.Hosting;
+using NServiceBus.Routing;
 using NServiceBus.Transport;
 using NServiceBus.Unicast;
 
@@ -28,6 +30,16 @@ namespace NServiceBus
             {
                 throw new Exception("When using ExactlyOnce Routing you cannot specify both name of a local router or name of the site.");
             }
+
+            var transportInfra = context.Settings.Get<TransportInfrastructure>();
+            var distributionPolicy = context.Settings.Get<DistributionPolicy>();
+            var endpointInstances = context.Settings.Get<EndpointInstances>();
+
+            var legacyRoutingLogic = new LegacyRoutingLogic(
+                settings.LegacyMigration.LegacyDestinations,
+                distributionPolicy,
+                endpointInstances,
+                x => transportInfra.ToTransportAddress(LogicalAddress.CreateRemoteAddress(x)));
 
             context.Container.ConfigureComponent(b =>
             {
@@ -87,6 +99,7 @@ namespace NServiceBus
                     hostInfo.HostId.ToString(), 
                     messageKindMap, 
                     messageHandlersMap,
+                    settings.LegacyMigration.LegacyDestinations,
                     b.Build<IDispatchMessages>());
             }, DependencyLifecycle.SingleInstance);
             context.RegisterStartupTask(b => b.Build<RoutingTableManager>());
@@ -95,7 +108,7 @@ namespace NServiceBus
 
             context.Pipeline.Replace("UnicastPublishRouterConnector", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
             context.Pipeline.Replace("MulticastPublishRouterBehavior", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
-            context.Pipeline.Replace("UnicastSendRouterConnector", b => new SendRoutingConnector(b.Build<RoutingLogic>()));
+            context.Pipeline.Replace("UnicastSendRouterConnector", b => new SendRoutingConnector(b.Build<RoutingLogic>(), legacyRoutingLogic));
 
             context.Pipeline.Replace("MessageDrivenSubscribeTerminator", new NullSubscribeTerminator(), "handles subscribe operations");
             context.Pipeline.Replace("MessageDrivenUnsubscribeTerminator", new NullUnsubscribeTerminator(), "handles unsubscribe operations");

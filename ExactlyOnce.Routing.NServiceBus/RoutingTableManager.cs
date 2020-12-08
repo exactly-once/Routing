@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
+using ExactlyOnce.Routing.Client;
 using ExactlyOnce.Routing.Endpoint.Model;
 using Microsoft.AspNetCore.SignalR.Client;
 using Newtonsoft.Json;
@@ -16,7 +15,6 @@ using NServiceBus.Features;
 using NServiceBus.Logging;
 using NServiceBus.Routing;
 using NServiceBus.Transport;
-using IDistributionPolicy = ExactlyOnce.Routing.Endpoint.Model.IDistributionPolicy;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace ExactlyOnce.Routing.NServiceBus
@@ -36,14 +34,15 @@ namespace ExactlyOnce.Routing.NServiceBus
         readonly string instanceId;
         readonly Dictionary<string, MessageKind> messageKindMap;
         readonly Dictionary<string, string> messageHandlersMap;
+        readonly Dictionary<string, string> legacyDestinations;
         readonly IDispatchMessages dispatcher;
-        readonly HttpClient httpClient;
+        readonly RoutingControllerClient client;
         CancellationTokenSource stopTokenSource;
         Task notificationTask;
         Task registerTask;
         volatile RoutingTableLogic table;
         string thisSite;
-        TimeSpan httpRetryDelay = TimeSpan.FromSeconds(5);
+        readonly TimeSpan httpRetryDelay = TimeSpan.FromSeconds(5);
 
         public RoutingTableManager(string routingControllerUrl,
             BlobContainerClient routingControllerBlobContainerClient,
@@ -56,6 +55,7 @@ namespace ExactlyOnce.Routing.NServiceBus
             string instanceId,
             Dictionary<string, MessageKind> messageKindMap,
             Dictionary<string, string> messageHandlersMap,
+            Dictionary<string, string> legacyDestinations,
             IDispatchMessages dispatcher)
         {
             this.routingControllerUrl = routingControllerUrl;
@@ -69,11 +69,9 @@ namespace ExactlyOnce.Routing.NServiceBus
             this.instanceId = instanceId;
             this.messageKindMap = messageKindMap;
             this.messageHandlersMap = messageHandlersMap;
+            this.legacyDestinations = legacyDestinations;
             this.dispatcher = dispatcher;
-            httpClient = new HttpClient
-            {
-                BaseAddress = new Uri(routingControllerUrl)
-            };
+            this.client = new RoutingControllerClient(routingControllerUrl);
         }
 
         protected override async Task OnStart(IMessageSession session)
@@ -117,30 +115,15 @@ namespace ExactlyOnce.Routing.NServiceBus
         async Task SendHelloToController()
         {
             var reportId = Guid.NewGuid().ToString();
-            var payload = new EndpointHelloRequest
-            {
-                EndpointName = endpointName,
-                InstanceId = instanceId,
-                ReportId = reportId,
-                Site = siteName
-            };
-            var payloadJson = JsonConvert.SerializeObject(payload);
-
             while (!stopTokenSource.IsCancellationRequested)
             {
                 try
                 {
-                    var response = await httpClient.PostAsync("api/ProcessEndpointHello", 
-                        new StringContent(payloadJson, Encoding.UTF8, "application/json"));
-                    if (response.IsSuccessStatusCode)
-                    {
-                        log.Info("Endpoint registered its site with the routing controller.");
-                        break;
-                    }
-                    log.Warn($"Error while contacting the routing controller. {response.StatusCode}: {response.ReasonPhrase}");
-                    await Task.Delay(httpRetryDelay);
+                    await client.RegisterEndpointSite(endpointName, instanceId, siteName, reportId);
+                    log.Info("Endpoint instance site registered with the routing controller.");
+                    break;
                 }
-                catch (HttpRequestException e)
+                catch (Exception e)
                 {
                     log.Warn("Error while contacting the routing controller.", e);
                     await Task.Delay(httpRetryDelay);
@@ -299,33 +282,17 @@ namespace ExactlyOnce.Routing.NServiceBus
         async Task Register()
         {
             var reportId = Guid.NewGuid().ToString();
-            var payload = new EndpointReportRequest
-            {
-                EndpointName = endpointName,
-                InputQueue = inputQueue,
-                RecognizedMessages = messageKindMap,
-                MessageHandlers = messageHandlersMap,
-                InstanceId = instanceId,
-                ReportId = reportId
-            };
-            var payloadJson = JsonConvert.SerializeObject(payload);
-
             while (!stopTokenSource.IsCancellationRequested)
             {
                 try
                 {
-                    var response = await httpClient.PostAsync("api/ProcessEndpointReport", 
-                        new StringContent(payloadJson, Encoding.UTF8, "application/json"));
-                    if (response.IsSuccessStatusCode)
-                    {
-                        log.Info("Endpoint registered with the routing controller.");
-                        break;
-                    }
-                    log.Warn($"Error while contacting the routing controller. {response.StatusCode}: {response.ReasonPhrase}");
-                    await Task.Delay(httpRetryDelay);
+                   await client.RegisterEndpoint(endpointName, instanceId, inputQueue, messageKindMap,
+                        messageHandlersMap, legacyDestinations, reportId).ConfigureAwait(false);
+                    log.Info("Endpoint registered with the routing controller.");
+                    break;
 
                 }
-                catch (HttpRequestException e)
+                catch (Exception e)
                 {
                     log.Warn("Error while contacting the routing controller.", e);
                     await Task.Delay(httpRetryDelay);

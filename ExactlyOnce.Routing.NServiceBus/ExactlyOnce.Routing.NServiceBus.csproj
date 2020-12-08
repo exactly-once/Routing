@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ExactlyOnce.Routing.Client\ExactlyOnce.Routing.Client.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Endpoint.Model\ExactlyOnce.Routing.Endpoint.Model.csproj" />
   </ItemGroup>
 
