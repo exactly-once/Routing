@@ -12,12 +12,14 @@ namespace ExactlyOnce.Routing.SelfHostedController
     {
         readonly ISender sender;
         readonly OnceExecutorFactory executorFactory;
+        readonly IStateStore stateStore;
         readonly ILogger<RoutingTableApiController> logger;
 
-        public RoutingTableApiController(OnceExecutorFactory executorFactory, ISender sender,
+        public RoutingTableApiController(OnceExecutorFactory executorFactory, IStateStore stateStore, ISender sender,
             ILogger<RoutingTableApiController> logger)
         {
             this.executorFactory = executorFactory;
+            this.stateStore = stateStore;
             this.logger = logger;
             this.sender = sender;
         }
@@ -39,6 +41,20 @@ namespace ExactlyOnce.Routing.SelfHostedController
             }
 
             return Ok();
+        }
+
+        [HttpGet]
+        [Route("GetRoutingTable")]
+        public async Task<IActionResult> Get()
+        {
+            var stateId = DeterministicGuid.MakeId("Instance");
+            var (state, etag) = await stateStore.Load<RoutingTableState>(stateId.ToString()).ConfigureAwait(false);
+            if (etag == null || state.Data == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(state.Data);
         }
 
         public class ConfigureEndpointSiteRoutingRequest

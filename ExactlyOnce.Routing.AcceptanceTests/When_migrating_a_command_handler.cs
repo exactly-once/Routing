@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.Client;
 using NServiceBus;
 using NServiceBus.AcceptanceTesting;
 using NServiceBus.AcceptanceTests;
@@ -16,7 +18,7 @@ namespace ExactlyOnce.Routing.AcceptanceTests
         [Test]
         public async Task Should_continue_delivering_commands_to_appointed_destination()
         {
-            var result = await Scenario.Define<Context>()
+            var result = await Scenario.Define<Context>(x => x.Stage = "Before migration")
                 .WithEndpoint<Sender>(b => b.CustomConfig(cfg =>
                 {
                     var transport = cfg.UseTransport<TestTransport>();
@@ -27,17 +29,16 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                 .Done(c => c.RequestReceived)
                 .Run();
 
-            //migrate sender
-            result = await Scenario.Define<Context>()
+            Assert.IsTrue(result.RequestReceived);
+
+            result = await Scenario.Define<Context>(x => x.Stage = "Sender migrated")
                 .WithController()
-                .WithRouter("Router", "a", cfg =>
-                {
-                    cfg.AddInterface<TestTransport>("Alpha", t => t.BrokerAlpha());
-                })
+                .WithRouter("Router", "a", cfg => { cfg.AddInterface<TestTransport>("Alpha", t => t.BrokerAlpha()); })
                 .WithManagedEndpoint<Context, Sender>("a", "Router", b => b.CustomConfig(cfg =>
                 {
                     var routing = cfg.GetSettings().Get<ExactlyOnceRoutingSettings>();
-                    routing.LegacyMigration.RouteToEndpoint(typeof(MyRequest), Conventions.EndpointNamingConvention(typeof(Receiver)));
+                    routing.LegacyMigration.RouteToEndpoint(typeof(MyRequest),
+                        Conventions.EndpointNamingConvention(typeof(Receiver)));
                 }).When(c => c.EndpointsStarted, s => s.Send(new MyRequest())))
                 .WithEndpoint<Receiver>()
                 .Done(c => c.RequestReceived)
@@ -45,13 +46,9 @@ namespace ExactlyOnce.Routing.AcceptanceTests
 
             Assert.IsTrue(result.RequestReceived);
 
-            //legacy routing information removed from code -- should be present by now in the routing table
-            result = await Scenario.Define<Context>()
+            result = await Scenario.Define<Context>(x => x.Stage = "Legacy routing information removed")
                 .WithController()
-                .WithRouter("Router", "a", cfg =>
-                {
-                    cfg.AddInterface<TestTransport>("Alpha", t => t.BrokerAlpha());
-                })
+                .WithRouter("Router", "a", cfg => { cfg.AddInterface<TestTransport>("Alpha", t => t.BrokerAlpha()); })
                 .WithManagedEndpoint<Context, Sender>("a", "Router", b => b.When(c => c.EndpointsStarted, async s =>
                 {
                     while (true)
@@ -74,13 +71,50 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                 .Run();
 
             Assert.IsTrue(result.RequestReceived);
+
+            result = await Scenario.Define<Context>(x => x.Stage = "Receiver migrated")
+                .WithController()
+                .WithRouter("Router", "a", cfg => { cfg.AddInterface<TestTransport>("Alpha", t => t.BrokerAlpha()); })
+                .WithManagedEndpoint<Context, Sender>("a", "Router")
+                .WithManagedEndpoint<Context, Receiver>("a", "Router")
+                .Do("Wait for routing table to be updated", async (context, client) =>
+                {
+                    var routingTable = await client.GetRoutingTable();
+
+                    var receiverInstances = routingTable.Sites.Values
+                        .SelectMany(x => x).Where(x =>
+                            x.EndpointName == Conventions.EndpointNamingConvention(typeof(Receiver)));
+
+                    context.ReceiverInstances = receiverInstances.ToArray();
+                    context.RoutingTable = routingTable;
+
+                    return context.ReceiverInstances.Any(x => x.InstanceId == DeterministicGuid.MakeId("a").ToString());
+                })
+                .Done()
+                .Run();
+
+            //Contains the migrated instance
+            Assert.IsTrue(result.ReceiverInstances.Any(x => x.InstanceId == DeterministicGuid.MakeId("a").ToString()));
+
+            //Legacy instance has been removed
+            Assert.AreEqual(1, result.ReceiverInstances.Length);
+
+            var entries = result.RoutingTable.Entries[typeof(MyRequest).FullName];
+
+            //Only one routing table entry
+            Assert.AreEqual(1, entries.Count);
+
+            //Legacy entry is replaced
+            Assert.AreNotEqual(entries[0].Handler, "$legacy");
         }
 
         class Context : ScenarioContext, ISequenceContext
         {
+            public string Stage { get; set; }
             public bool RequestReceived { get; set; }
             public int Step { get; set; }
-            public bool HandlerAppointed { get; set; }
+            public EndpointInstanceId[] ReceiverInstances { get; set; }
+            public RoutingTable RoutingTable { get; set; }
         }
 
         class Sender : EndpointConfigurationBuilder

@@ -1,12 +1,10 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json;
 
-namespace ExactlyOnce.Routing.Endpoint.Model
+namespace ExactlyOnce.Routing.Client
 {
     public class RoutingTable
     {
-        //Each entry is guaranteed to refer to a different handler type
         public Dictionary<string, List<RoutingTableEntry>> Entries { get; }
         public Dictionary<string, Dictionary<string, DestinationSiteInfo>> DestinationSiteToNextHopMapping { get; }
         public Dictionary<string, List<EndpointInstanceId>> Sites { get; }
@@ -21,11 +19,11 @@ namespace ExactlyOnce.Routing.Endpoint.Model
             Dictionary<string, Dictionary<string, DestinationSiteInfo>> destinationSiteToNextHopMapping,
             Dictionary<string, string> distributionPolicy,
             Dictionary<string, List<EndpointInstanceId>> sites,
-            List<Redirection> redirections, 
+            List<Redirection> redirections,
             Dictionary<string, List<RouterInstanceInfo>> routerInstances)
         {
             //Exclude inactive entries
-            Entries = entries.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Where(x => x.Active).ToList());
+            Entries = entries;
             DestinationSiteToNextHopMapping = destinationSiteToNextHopMapping;
             Sites = sites;
             Redirections = redirections;

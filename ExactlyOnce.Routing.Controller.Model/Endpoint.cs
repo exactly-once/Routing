@@ -9,12 +9,11 @@ namespace ExactlyOnce.Routing.Controller.Model
     {
         //Used by deserialization
         [JsonConstructor]
-        public Endpoint(string name, Dictionary<string, EndpointInstance> instances, Dictionary<string, MessageKind> recognizedMessages, bool legacyDestinationsAdded)
+        public Endpoint(string name, Dictionary<string, EndpointInstance> instances, Dictionary<string, MessageKind> recognizedMessages)
         {
             Name = name;
             Instances = instances;
             RecognizedMessages = recognizedMessages;
-            LegacyDestinationsAdded = legacyDestinationsAdded;
         }
 
         // Used by event loop
@@ -24,12 +23,11 @@ namespace ExactlyOnce.Routing.Controller.Model
         }
 
         public Endpoint(string name)
-            : this(name, new Dictionary<string, EndpointInstance>(), new Dictionary<string, MessageKind>(), false)
+            : this(name, new Dictionary<string, EndpointInstance>(), new Dictionary<string, MessageKind>())
         {
         }
 
         public string Name { get; }
-        public bool LegacyDestinationsAdded { get; private set; }
         public Dictionary<string, EndpointInstance> Instances { get; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; }
 
@@ -70,8 +68,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         }
 
         public IEnumerable<IEvent> OnStartup(string instanceId, string inputQueue,
-            Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers,
-            Dictionary<string, string> legacyDestinations)
+            Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers)
         {
             List<string> affectedMessageTypes;
             if (!Instances.TryGetValue(instanceId, out var instance))
@@ -79,16 +76,14 @@ namespace ExactlyOnce.Routing.Controller.Model
                 instance = new EndpointInstance(instanceId, inputQueue, messageHandlers, recognizedMessages, null);
                 Instances[instanceId] = instance;
                 affectedMessageTypes = instance.RecognizedMessages.Keys.ToList();
-                return DeriveMessageKindsChanges(affectedMessageTypes)
-                    .Concat(GenerateLegacyDestinationEvents(legacyDestinations));
+                return DeriveMessageKindsChanges(affectedMessageTypes);
             }
 
             affectedMessageTypes = instance.Update(messageHandlers, recognizedMessages, inputQueue);
 
             var result = 
                 GenerateInstanceLocationUpdated(instanceId, instance.Site, instance.Site, instance.InputQueue, inputQueue)
-                    .Concat(DeriveMessageKindsChanges(affectedMessageTypes))
-                    .Concat(GenerateLegacyDestinationEvents(legacyDestinations));
+                    .Concat(DeriveMessageKindsChanges(affectedMessageTypes));
 
             if (instance.Site != null)
             {
@@ -97,17 +92,6 @@ namespace ExactlyOnce.Routing.Controller.Model
             }
 
             return result;
-        }
-
-        IEnumerable<IEvent> GenerateLegacyDestinationEvents(Dictionary<string, string> legacyDestinations)
-        {
-            if (LegacyDestinationsAdded)
-            {
-                return Enumerable.Empty<IEvent>();
-            }
-
-            LegacyDestinationsAdded = true;
-            return legacyDestinations.Select(kvp => new LegacyDestinationAdded(kvp.Key, kvp.Value, Name));
         }
 
         public void ValidateSubscribe(string messageType, string handlerType)

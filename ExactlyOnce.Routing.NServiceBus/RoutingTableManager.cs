@@ -16,6 +16,7 @@ using NServiceBus.Logging;
 using NServiceBus.Routing;
 using NServiceBus.Transport;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
+using RoutingTable = ExactlyOnce.Routing.Endpoint.Model.RoutingTable;
 
 namespace ExactlyOnce.Routing.NServiceBus
 {
@@ -36,6 +37,7 @@ namespace ExactlyOnce.Routing.NServiceBus
         readonly Dictionary<string, string> messageHandlersMap;
         readonly Dictionary<string, string> legacyDestinations;
         readonly IDispatchMessages dispatcher;
+        readonly Action<string> siteCallback;
         readonly RoutingControllerClient client;
         CancellationTokenSource stopTokenSource;
         Task notificationTask;
@@ -45,6 +47,7 @@ namespace ExactlyOnce.Routing.NServiceBus
         readonly TimeSpan httpRetryDelay = TimeSpan.FromSeconds(5);
 
         public RoutingTableManager(string routingControllerUrl,
+            RoutingControllerClient routingControllerClient,
             BlobContainerClient routingControllerBlobContainerClient,
             SiteRoutingPolicyConfiguration siteRoutingPolicyConfiguration,
             DistributionPolicyConfiguration distributionPolicyConfiguration,
@@ -56,7 +59,8 @@ namespace ExactlyOnce.Routing.NServiceBus
             Dictionary<string, MessageKind> messageKindMap,
             Dictionary<string, string> messageHandlersMap,
             Dictionary<string, string> legacyDestinations,
-            IDispatchMessages dispatcher)
+            IDispatchMessages dispatcher,
+            Action<string> siteCallback)
         {
             this.routingControllerUrl = routingControllerUrl;
             this.routingControllerBlobContainerClient = routingControllerBlobContainerClient;
@@ -71,7 +75,8 @@ namespace ExactlyOnce.Routing.NServiceBus
             this.messageHandlersMap = messageHandlersMap;
             this.legacyDestinations = legacyDestinations;
             this.dispatcher = dispatcher;
-            this.client = new RoutingControllerClient(routingControllerUrl);
+            this.siteCallback = siteCallback;
+            client = routingControllerClient;
         }
 
         protected override async Task OnStart(IMessageSession session)
@@ -109,6 +114,7 @@ namespace ExactlyOnce.Routing.NServiceBus
             });
 
             await routingTableReady.Task.ConfigureAwait(false);
+            siteCallback(thisSite);
             log.Info("Routing table ready.");
         }
 

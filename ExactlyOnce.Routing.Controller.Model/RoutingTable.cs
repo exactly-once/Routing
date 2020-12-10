@@ -22,13 +22,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         public List<Redirection> Redirections { get; }
 
         public RoutingTable()
-            : this(0, new Dictionary<string, List<RoutingTableEntry>>(),
-                new Dictionary<string, Dictionary<string, DestinationSiteInfo>>(),
-                new Dictionary<string, string>(),
-                new Dictionary<string, string>(),
-                new Dictionary<string, List<EndpointInstanceId>>(),
-                new List<Redirection>(),
-                new Dictionary<string, List<RouterInstanceInfo>>())
+            : this(0, new Dictionary<string, List<RoutingTableEntry>>(), new Dictionary<string, Dictionary<string, DestinationSiteInfo>>(), new Dictionary<string, string>(), new Dictionary<string, string>(), new Dictionary<string, List<EndpointInstanceId>>(), new List<Redirection>(), new Dictionary<string, List<RouterInstanceInfo>>())
         {
         }
 
@@ -105,7 +99,10 @@ namespace ExactlyOnce.Routing.Controller.Model
 
             SiteRoutingPolicy.TryGetValue(endpoint, out var routingPolicy);
             DistributionPolicy.TryGetValue(endpoint, out var distributionPolicy);
-            routes.Add(new RoutingTableEntry(handlerType, endpoint, sites, routingPolicy, distributionPolicy));
+
+            var locationKnown = Sites.Values.SelectMany(x => x).Any(x => x.EndpointName == endpoint);
+            var tableEntry = new RoutingTableEntry(handlerType, endpoint, sites, routingPolicy, distributionPolicy, locationKnown);
+            routes.Add(tableEntry);
 
             //When a route is added redirection is removed (if existed)
             Redirections.RemoveAll(x => x.FromHandler == handlerType && x.FromEndpoint == endpoint);
@@ -134,7 +131,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         public IEnumerable<IEvent> Handle(RouteChanged e)
         {
             var existing = Entries[e.MessageType].Single(e1 => e1.Handler == e.HandlerType && e1.Endpoint == e.Endpoint);
-            existing.UpdateSites(e.Sites);
+            existing.Update(e.Sites, e.NewHandlerType);
             return GenerateChangeEvent();
         }
 
@@ -166,10 +163,13 @@ namespace ExactlyOnce.Routing.Controller.Model
                 Sites[e.Site] = newSite;
             }
 
-            var previousSite = Sites.Values.FirstOrDefault(s =>
-               s.Any(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint));
+            foreach (var siteInstances in Sites.Values)
+            {
+                siteInstances.RemoveAll(x =>
+                    x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint //managed instance
+                    || x.InstanceId == null && e.InstanceId != null && x.InputQueue == e.InputQueue);
+            }
 
-            previousSite?.RemoveAll(x => x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint);
             newSite.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId, e.InputQueue));
 
             if (!DestinationSiteToNextHopMapping.ContainsKey(e.Site))
@@ -179,6 +179,13 @@ namespace ExactlyOnce.Routing.Controller.Model
                     [e.Site] = new DestinationSiteInfo(null, null, 0)
                 };
                 DestinationSiteToNextHopMapping[e.Site] = destinationSiteInfos;
+            }
+
+            //Activate all inactive routes
+            var affectedRoutes = Entries.Values.SelectMany(x => x).Where(x => x.Endpoint == e.Endpoint);
+            foreach (var route in affectedRoutes)
+            {
+                route.Activate();
             }
 
             return GenerateChangeEvent();

@@ -5,15 +5,18 @@ namespace ExactlyOnce.Routing.Controller.Model
     public class LegacyDestinationAdded : IEvent
     {
         [JsonConstructor]
-        public LegacyDestinationAdded(string messageType, string destination, string addedByEndpoint)
+        public LegacyDestinationAdded(string handledMessageType, MessageKind messageKind,
+            string endpoint, string site)
         {
-            MessageType = messageType;
-            Destination = destination;
-            AddedByEndpoint = addedByEndpoint;
+            HandledMessageType = handledMessageType;
+            Endpoint = endpoint;
+            Site = site;
+            MessageKind = messageKind;
         }
 
-        public string MessageType { get; }
-        public string Destination { get; }
-        public string AddedByEndpoint { get; }
+        public string HandledMessageType { get; }
+        public MessageKind MessageKind { get; }
+        public string Site { get; }
+        public string Endpoint { get; }
     }
 }

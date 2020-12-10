@@ -17,7 +17,7 @@ namespace ExactlyOnce.Routing.Controller.Model
         }
 
         public string Endpoint { get; }
-        public string Handler { get; }
+        public string Handler { get; private set; }
         public DestinationState State { get; private set; }
         public MessageKind MessageKind { get; private set; }
         public List<string> Sites { get; }
@@ -78,6 +78,16 @@ namespace ExactlyOnce.Routing.Controller.Model
         public void MessageKindChanged(MessageKind messageKind)
         {
             MessageKind = messageKind;
+        }
+
+        public void Migrate(string handlerSite, string handlerType)
+        {
+            if (!Sites.Contains(handlerSite))
+            {
+                Sites.Add(handlerSite);
+            }
+
+            Handler = handlerType;
         }
     }
 }

@@ -3,11 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Newtonsoft.Json;
 using Endpoint = ExactlyOnce.Routing.Controller.Model.Endpoint;
 
 namespace ExactlyOnce.Routing.AzureController
@@ -27,7 +25,7 @@ namespace ExactlyOnce.Routing.AzureController
             var messageKinds = request.RecognizedMessages ?? new Dictionary<string, MessageKind>();
 
             var messages = await execute.Once(
-                e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers, request.LegacyDestinations),
+                e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers),
                 () => new Endpoint(request.EndpointName));
 
             foreach (var message in messages)
@@ -63,7 +61,6 @@ namespace ExactlyOnce.Routing.AzureController
             public string InstanceId { get; set; }
             public Dictionary<string, string> MessageHandlers { get; set; }
             public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
-            public Dictionary<string, string> LegacyDestinations { get; set; }
         }
 
         public class EndpointHelloRequest

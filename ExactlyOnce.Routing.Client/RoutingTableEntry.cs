@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace ExactlyOnce.Routing.Endpoint.Model
+namespace ExactlyOnce.Routing.Client
 {
     public class RoutingTableEntry
     {
@@ -22,8 +22,5 @@ namespace ExactlyOnce.Routing.Endpoint.Model
         public string SiteRoutingPolicy { get; }
         public string DistributionPolicy { get; }
         public bool Active { get; set; }
-
-        [JsonIgnore]
-        public ISiteRoutingPolicy SiteRoutingPolicyInstance { get; set; }
     }
 }

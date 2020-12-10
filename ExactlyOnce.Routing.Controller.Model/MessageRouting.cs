@@ -11,6 +11,8 @@ namespace ExactlyOnce.Routing.Controller.Model
         IEventHandler<MessageTypeAdded>,
         IEventHandler<LegacyDestinationAdded>
     {
+        const string LegacyHandlerType = "$legacy";
+
         [JsonConstructor]
         public MessageRouting(string messageType, List<Destination> destinations)
         {
@@ -25,7 +27,6 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public string MessageType { get; private set; }
         public List<Destination> Destinations { get; }
-        public Dictionary<string, string> LegacyDestinations { get; }
 
         public IEnumerable<IEvent> Subscribe(string handlerType, string endpoint, string replacedHandlerType)
         {
@@ -198,19 +199,37 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public IEnumerable<IEvent> HandlerAdded(string handlerType, string handlerSite, string endpoint, MessageKind messageKind)
         {
-            var destination = Destinations.FirstOrDefault(x => x.Handler == handlerType && x.Endpoint == endpoint);
-            if (destination == null)
+            var legacyDestination = Destinations.FirstOrDefault(x => x.Handler == LegacyHandlerType && x.Endpoint == endpoint);
+            if (legacyDestination != null)
             {
-                destination = new Destination(handlerType, endpoint, DestinationState.Inactive, messageKind, new List<string> { handlerSite });
-                Destinations.Add(destination);
+                if (legacyDestination.State != DestinationState.Active)
+                {
+                    Destinations.Remove(legacyDestination);
+                    var destination = new Destination(handlerType, endpoint, DestinationState.Inactive, messageKind, new List<string> { handlerSite });
+                    Destinations.Add(destination);
+                }
+                else
+                {
+                    legacyDestination.Migrate(handlerSite, handlerType);
+                    yield return new RouteChanged(MessageType, LegacyHandlerType, legacyDestination.Endpoint, legacyDestination.Sites, handlerType);
+                }
             }
             else
             {
-                destination.HandlerAdded(handlerSite);
-                if (destination.State != DestinationState.Inactive)
+                var destination = Destinations.FirstOrDefault(x => x.Handler == handlerType && x.Endpoint == endpoint);
+                if (destination == null)
                 {
-                    yield return new RouteChanged(MessageType, destination.Handler, destination.Endpoint,
-                        destination.Sites);
+                    destination = new Destination(handlerType, endpoint, DestinationState.Inactive, messageKind, new List<string> { handlerSite });
+                    Destinations.Add(destination);
+                }
+                else
+                {
+                    destination.HandlerAdded(handlerSite);
+                    if (destination.State != DestinationState.Inactive)
+                    {
+                        yield return new RouteChanged(MessageType, destination.Handler, destination.Endpoint,
+                            destination.Sites, destination.Handler);
+                    }
                 }
             }
         }
@@ -242,7 +261,7 @@ namespace ExactlyOnce.Routing.Controller.Model
                 if (destination.State != DestinationState.Inactive)
                 {
                     yield return new RouteChanged(MessageType, destination.Handler, destination.Endpoint,
-                        destination.Sites);
+                        destination.Sites, destination.Handler);
                 }
             }
         }
@@ -276,11 +295,32 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public IEnumerable<IEvent> Handle(LegacyDestinationAdded e)
         {
-            MessageType = e.MessageType;
+            MessageType = e.HandledMessageType;
 
+            var destination = Destinations.FirstOrDefault(x => x.Handler == LegacyHandlerType && x.Endpoint == e.Endpoint);
+            if (destination != null)
+            {
+                destination.HandlerAdded(e.Site);
+                if (destination.State != DestinationState.Inactive)
+                {
+                    yield return new RouteChanged(MessageType, destination.Handler, destination.Endpoint,
+                        destination.Sites, destination.Handler);
+                }
+            }
+            else
+            {
+                destination = new Destination(LegacyHandlerType, e.Endpoint, DestinationState.Inactive, MessageKind.Message, new List<string> {e.Site});
+                Destinations.Add(destination);
 
-            
-            return Enumerable.Empty<IEvent>();
+                var existingActiveDestination = Destinations.Any(x => x.State == DestinationState.Active);
+                if (!existingActiveDestination)
+                {
+                    destination.Activate();
+
+                    var routeAdded = new RouteAdded(MessageType, destination.Handler, destination.Endpoint, destination.Sites);
+                    yield return new MessageRoutingChanged(routeAdded, new List<RouteRemoved>());
+                }
+            }
         }
     }
 }

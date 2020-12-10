@@ -51,7 +51,15 @@ class ControllerComponent : IComponentBehavior
         {
             if (host != null)
             {
-                await host.StopAsync();
+                try
+                {
+                    await host.StopAsync();
+
+                }
+                catch (OperationCanceledException)
+                {
+                   //Ignore
+                }
             }
         }
     }

@@ -35,7 +35,12 @@ namespace NServiceBus
             var distributionPolicy = context.Settings.Get<DistributionPolicy>();
             var endpointInstances = context.Settings.Get<EndpointInstances>();
 
+            var routingControllerClient = new RoutingControllerClient(settings.ControllerUrl);
+
             var legacyRoutingLogic = new LegacyRoutingLogic(
+                routingControllerClient,
+                context.Settings.EndpointName(),
+
                 settings.LegacyMigration.LegacyDestinations,
                 distributionPolicy,
                 endpointInstances,
@@ -88,7 +93,8 @@ namespace NServiceBus
                         return MessageKind.Message;
                     });
 
-                return new RoutingTableManager(settings.ControllerUrl, 
+                return new RoutingTableManager(settings.ControllerUrl,
+                    routingControllerClient,
                     settings.ControllerContainerClient, 
                     settings.SiteRoutingPolicyConfiguration, 
                     settings.DistributionPolicyConfiguration, 
@@ -100,7 +106,8 @@ namespace NServiceBus
                     messageKindMap, 
                     messageHandlersMap,
                     settings.LegacyMigration.LegacyDestinations,
-                    b.Build<IDispatchMessages>());
+                    b.Build<IDispatchMessages>(),
+                    x => legacyRoutingLogic.SetSite(x));
             }, DependencyLifecycle.SingleInstance);
             context.RegisterStartupTask(b => b.Build<RoutingTableManager>());
 

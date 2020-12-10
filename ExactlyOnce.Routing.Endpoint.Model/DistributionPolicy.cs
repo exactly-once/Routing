@@ -68,7 +68,7 @@ namespace ExactlyOnce.Routing.Endpoint.Model
                 .ToDictionary(x => x.Key,
                     kvp => kvp.Value
                         .Where(x => x.EndpointName == endpointName)
-                        .ToDictionary(x => x.InstanceId, x => x.InputQueue));
+                        .ToDictionary(x => x.InstanceId ?? "$legacy", x => x.InputQueue));
 
             var policy = policyFactory();
             policy.Initialize(endpointName, queueMap);

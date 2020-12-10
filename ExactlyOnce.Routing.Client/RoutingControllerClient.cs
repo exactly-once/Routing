@@ -44,6 +44,30 @@ namespace ExactlyOnce.Routing.Client
             }
         }
 
+        public async Task<RoutingTable> GetRoutingTable()
+        {
+            try
+            {
+                var response = await httpClient.GetAsync($"GetRoutingTable").ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    return null;
+                }
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Unexpected status code when requesting the routing table state: {response.StatusCode}: {response.ReasonPhrase}.");
+                }
+
+                var contentString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                return JsonConvert.DeserializeObject<RoutingTable>(contentString);
+
+            }
+            catch (HttpRequestException e)
+            {
+                throw new Exception($"Error while requesting the routing table state.", e);
+            }
+        }
+
         public Task RegisterEndpoint(string endpointName, string instanceId, string inputQueue,
             Dictionary<string, MessageKind> recognizedMessages,
             Dictionary<string, string> messageHandlersMap,
@@ -76,23 +100,38 @@ namespace ExactlyOnce.Routing.Client
             return Post("api/ProcessEndpointHello", payload, "registering endpoint instance's site");
         }
 
-        public Task RegisterLegacyRoute(string fromEndpoint, Type messageType, string toEndpoint, string toQueue,
+        public Task RegisterLegacyDestination(string sendingEndpoint, string messageType, string destinationEndpoint, string destinationQueue,
             string site, string requestId)
         {
+            var payload = new LegacyDestinationRequest
+            {
+                DestinationEndpointName =  destinationEndpoint,
+                DestinationQueue = destinationQueue,
+                Site = site,
+                MessageType = messageType,
+                SendingEndpointName = sendingEndpoint,
+                RequestId = requestId
+            };
 
+            return Post("api/RegisterLegacyDestination", payload, "registering legacy destination");
         }
 
         public Task Subscribe(string endpointName, Type handlerType, Type replacedHandlerType, Type messageType,
             string requestId)
         {
-            var handlerTypeName = $"{handlerType.FullName}, {handlerType.Assembly.GetName().Name}";
+            var handlerTypeName = GetHandlerTypeName(handlerType);
             var replacedHandlerTypeName = replacedHandlerType != null
-                ? $"{replacedHandlerType.FullName}, {replacedHandlerType.Assembly.GetName().Name}"
+                ? GetHandlerTypeName(replacedHandlerType)
                 : null;
 
             var messageTypeName = messageType.FullName;
 
             return Subscribe(endpointName, handlerTypeName, replacedHandlerTypeName, messageTypeName, requestId);
+        }
+
+        static string GetHandlerTypeName(Type handlerType)
+        {
+            return $"{handlerType.FullName}, {handlerType.Assembly.GetName().Name}";
         }
 
         public Task Subscribe(string endpointName, string handlerType, string replacedHandlerType, string messageType, string requestId)
