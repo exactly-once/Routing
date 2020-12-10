@@ -11,5 +11,6 @@ namespace ExactlyOnce.Routing.Client
         public Dictionary<string, string> MessageHandlers { get; set; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
         public Dictionary<string, string> LegacyDestinations { get; set; }
+        public bool AutoSubscribe { get; set; }
     }
 }

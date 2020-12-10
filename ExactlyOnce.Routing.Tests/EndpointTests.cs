@@ -26,7 +26,8 @@ namespace ExactlyOnce.Routing.Tests
         {
             var receiverEndpoint = new Controller.Model.Endpoint("Receiver",
                 new Dictionary<string, EndpointInstance>(),
-                new Dictionary<string, MessageKind>());
+                new Dictionary<string, MessageKind>(),
+                LegacyAutoSubscribeState.NotSet);
 
             var changes = receiverEndpoint.OnHello("A", "Site").ToArray();
 
@@ -38,7 +39,7 @@ namespace ExactlyOnce.Routing.Tests
             }, new List<MessageHandlerInstance>
             {
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
-            }).ToArray();
+            }, false).ToArray();
 
             var handlerAdded = changes.OfType<MessageHandlerAdded>().Single();
             var typeAdded = changes.OfType<MessageTypeAdded>().Single();
@@ -57,7 +58,8 @@ namespace ExactlyOnce.Routing.Tests
         {
             var receiverEndpoint = new Controller.Model.Endpoint("Receiver",
                 new Dictionary<string, EndpointInstance>(),
-                new Dictionary<string, MessageKind>());
+                new Dictionary<string, MessageKind>(),
+                LegacyAutoSubscribeState.NotSet);
 
             var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
@@ -65,7 +67,7 @@ namespace ExactlyOnce.Routing.Tests
             }, new List<MessageHandlerInstance>
             {
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
-            }).ToArray();
+            }, false).ToArray();
 
             Assert.IsFalse(changes.OfType<MessageHandlerAdded>().Any());
             var typeAdded = changes.OfType<MessageTypeAdded>().Single();
@@ -87,7 +89,8 @@ namespace ExactlyOnce.Routing.Tests
         {
             var receiverEndpoint = new Controller.Model.Endpoint("Receiver",
                 new Dictionary<string, EndpointInstance>(),
-                new Dictionary<string, MessageKind>());
+                new Dictionary<string, MessageKind>(),
+                LegacyAutoSubscribeState.NotSet);
 
             var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
@@ -95,7 +98,7 @@ namespace ExactlyOnce.Routing.Tests
             }, new List<MessageHandlerInstance>
             {
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
-            });
+            }, false);
 
             var typeAdded = changes.OfType<MessageTypeAdded>().Single();
 
@@ -107,7 +110,7 @@ namespace ExactlyOnce.Routing.Tests
             }, new List<MessageHandlerInstance>
             {
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
-            });
+            }, false);
 
             var kindChanged = changes.OfType<MessageKindChanged>().Single();
 
@@ -119,7 +122,8 @@ namespace ExactlyOnce.Routing.Tests
         {
             var receiverEndpoint = new Controller.Model.Endpoint("Receiver",
                 new Dictionary<string, EndpointInstance>(),
-                new Dictionary<string, MessageKind>());
+                new Dictionary<string, MessageKind>(),
+                LegacyAutoSubscribeState.NotSet);
 
             var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
@@ -127,12 +131,12 @@ namespace ExactlyOnce.Routing.Tests
             }, new List<MessageHandlerInstance>
             {
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
-            }).ToArray();
+            }, false).ToArray();
 
             changes = receiverEndpoint.OnStartup("B", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
-            }, new List<MessageHandlerInstance>()).ToArray();
+            }, new List<MessageHandlerInstance>(), false).ToArray();
 
             changes = receiverEndpoint.OnHello("A", "Site").ToArray();
 
@@ -156,7 +160,8 @@ namespace ExactlyOnce.Routing.Tests
         {
             var receiverEndpoint = new Controller.Model.Endpoint("Receiver",
                 new Dictionary<string, EndpointInstance>(),
-                new Dictionary<string, MessageKind>());
+                new Dictionary<string, MessageKind>(),
+                LegacyAutoSubscribeState.NotSet);
 
             var changes = receiverEndpoint.OnStartup("A", "receiver", new Dictionary<string, MessageKind>
             {
@@ -164,12 +169,12 @@ namespace ExactlyOnce.Routing.Tests
             }, new List<MessageHandlerInstance>
             {
                 new MessageHandlerInstance("MyMessageHandler", "Messages.MyMessage")
-            }).ToArray();
+            }, false).ToArray();
 
             changes = receiverEndpoint.OnStartup("B", "receiver", new Dictionary<string, MessageKind>
             {
                 ["Messages.MyMessage"] = MessageKind.Command
-            }, new List<MessageHandlerInstance>()).ToArray();
+            }, new List<MessageHandlerInstance>(), false).ToArray();
 
             changes = receiverEndpoint.OnHello("A", "SiteA").ToArray();
 

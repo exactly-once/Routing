@@ -38,6 +38,7 @@ namespace ExactlyOnce.Routing.NServiceBus
         readonly Dictionary<string, string> legacyDestinations;
         readonly IDispatchMessages dispatcher;
         readonly Action<string> siteCallback;
+        readonly bool autoSubscribe;
         readonly RoutingControllerClient client;
         CancellationTokenSource stopTokenSource;
         Task notificationTask;
@@ -60,7 +61,8 @@ namespace ExactlyOnce.Routing.NServiceBus
             Dictionary<string, string> messageHandlersMap,
             Dictionary<string, string> legacyDestinations,
             IDispatchMessages dispatcher,
-            Action<string> siteCallback)
+            Action<string> siteCallback,
+            bool autoSubscribe)
         {
             this.routingControllerUrl = routingControllerUrl;
             this.routingControllerBlobContainerClient = routingControllerBlobContainerClient;
@@ -76,6 +78,7 @@ namespace ExactlyOnce.Routing.NServiceBus
             this.legacyDestinations = legacyDestinations;
             this.dispatcher = dispatcher;
             this.siteCallback = siteCallback;
+            this.autoSubscribe = autoSubscribe;
             client = routingControllerClient;
         }
 
@@ -293,7 +296,7 @@ namespace ExactlyOnce.Routing.NServiceBus
                 try
                 {
                    await client.RegisterEndpoint(endpointName, instanceId, inputQueue, messageKindMap,
-                        messageHandlersMap, legacyDestinations, reportId).ConfigureAwait(false);
+                        messageHandlersMap, legacyDestinations, autoSubscribe, reportId).ConfigureAwait(false);
                     log.Info("Endpoint registered with the routing controller.");
                     break;
 

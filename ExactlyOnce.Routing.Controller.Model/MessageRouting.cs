@@ -268,6 +268,12 @@ namespace ExactlyOnce.Routing.Controller.Model
 
         public IEnumerable<IEvent> Handle(MessageHandlerAdded e)
         {
+            if (e.AutoSubscribe)
+            {
+                return HandlerAdded(e.HandlerType, e.Site, e.Endpoint, e.MessageKind)
+                    .Concat(Subscribe(e.HandlerType, e.Endpoint, null));
+            }
+
             return HandlerAdded(e.HandlerType, e.Site, e.Endpoint, e.MessageKind);
         }
 

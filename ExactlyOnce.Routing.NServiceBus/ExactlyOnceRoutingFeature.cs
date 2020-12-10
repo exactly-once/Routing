@@ -44,9 +44,10 @@ namespace NServiceBus
 
             var routingControllerClient = new RoutingControllerClient(settings.ControllerUrl);
 
+            var legacyMigrationEnabled = settings.MigrationSettings != null;
             LegacyRoutingLogic legacyRoutingLogic = null;
 
-            if (settings.MigrationSettings != null)
+            if (legacyMigrationEnabled)
             {
                 legacyRoutingLogic = new LegacyRoutingLogic(
                     routingControllerClient,
@@ -118,13 +119,14 @@ namespace NServiceBus
                     messageHandlersMap,
                     settings.EnableLegacyMigrationMode().LegacyDestinations,
                     b.Build<IDispatchMessages>(),
-                    x => legacyRoutingLogic?.SetSite(x));
+                    x => legacyRoutingLogic?.SetSite(x),
+                    legacyMigrationEnabled);
             }, DependencyLifecycle.SingleInstance);
             context.RegisterStartupTask(b => b.Build<RoutingTableManager>());
 
             context.Container.ConfigureComponent(b => new RoutingLogic(b.Build<IRoutingTable>()), DependencyLifecycle.SingleInstance);
 
-            if (settings.MigrationSettings != null)
+            if (legacyMigrationEnabled)
             {
                 if (transportInfra.OutboundRoutingPolicy.Publishes == OutboundRoutingType.Multicast)
                 {
@@ -147,6 +149,10 @@ namespace NServiceBus
             context.Pipeline.Replace("MessageDrivenUnsubscribeTerminator", new NullUnsubscribeTerminator(), "handles unsubscribe operations");
 
             context.Pipeline.Register(b => new ReroutingBehavior(b.Build<RoutingLogic>()), "Reroutes lost messages to their correct destinations");
+
+            context.Pipeline.Register(new DualRoutingDeduplicationBehavior(context.Settings.EndpointName()), "Discards duplicate dual routing messages");
+
+            context.Pipeline.Replace("RoutingToDispatchConnector", new RoutingToDispatchConnector());
         }
 
         static string BuildHandlerName(Type handlerType)

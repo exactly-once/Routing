@@ -8,7 +8,6 @@ public static class ConfigureEndpointTestTransport
     public static TransportExtensions<TestTransport> BrokerAlpha(this TransportExtensions<TestTransport> transportConfig)
     {
         Configure(transportConfig, "Alpha");
-        transportConfig.NoNativePubSub();
         return transportConfig;
     }
 

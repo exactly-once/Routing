@@ -8,7 +8,8 @@
     {
         public static async Task DefinePersistence(this EndpointConfiguration config, RunDescriptor runDescriptor, EndpointCustomizationConfiguration endpointCustomizationConfiguration)
         {
-            var persistenceConfiguration = new ConfigureEndpointInMemoryPersistence();
+            //var persistenceConfiguration = new ConfigureEndpointInMemoryPersistence();
+            var persistenceConfiguration = new ConfigureEndpointTestPersistence();
             await persistenceConfiguration.Configure(endpointCustomizationConfiguration.EndpointName, config, runDescriptor.Settings, endpointCustomizationConfiguration.PublisherMetadata);
         }
 

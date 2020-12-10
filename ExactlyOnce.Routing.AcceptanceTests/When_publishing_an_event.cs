@@ -14,7 +14,7 @@ namespace ExactlyOnce.Routing.AcceptanceTests
     public class When_publishing_an_event : NServiceBusAcceptanceTest
     {
         [Test]
-        public async Task Should_deliver_it_to_appointed_destination()
+        public async Task Should_deliver_it_to_the_subscriber()
         {
             var result = await Scenario.Define<Context>()
                 .WithController()
@@ -24,21 +24,22 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                     cfg.AddInterface<TestTransport>("Bravo", t => t.BrokerBravo());
                 })
                 .WithManagedEndpoint<Context, Publisher>("a", "Router", c => 
-                    c.When(c => c.HandlerSubscribed, async s =>
+                    c.When(c => c.HandlerSubscribed, async (s, ctx) =>
                     {
-                        while (true)
+                        while (!ctx.EventReceived)
                         {
                             try
                             {
                                 await s.Publish(new MyEvent());
-                                break;
                             }
                             catch (Exception e)
                             {
                                 Console.WriteLine(e);
+                            }
+                            finally
+                            {
                                 await Task.Delay(1000);
                             }
-
                         }
                     }))
                 .WithManagedEndpoint<Context, Subscriber>("a", "Router")
@@ -54,7 +55,7 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                     return true;
 
                 })
-                .Do("Appoint handler", async (context, client) =>
+                .Do("Subscribe", async (context, client) =>
                 {
                     await client.Subscribe(Conventions.EndpointNamingConvention(typeof(Subscriber)), typeof(Subscriber.MyEventHandler), null,
                         typeof(MyEvent), Guid.NewGuid().ToString()).ConfigureAwait(false);

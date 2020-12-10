@@ -88,7 +88,10 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                     context.ReceiverInstances = receiverInstances.ToArray();
                     context.RoutingTable = routingTable;
 
-                    return context.ReceiverInstances.Any(x => x.InstanceId == DeterministicGuid.MakeId("a").ToString());
+                    context.RoutingTable.Entries.TryGetValue(typeof(MyRequest).FullName, out var entries);
+
+                    return entries != null && entries.Count == 1 && entries[0].Handler != "$legacy"
+                        && context.ReceiverInstances.Any(x => x.InstanceId == DeterministicGuid.MakeId("a").ToString());
                 })
                 .Done()
                 .Run();

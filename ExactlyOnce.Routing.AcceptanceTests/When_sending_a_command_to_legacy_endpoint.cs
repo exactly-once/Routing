@@ -62,6 +62,7 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                             {typeof(Receiver.MyRequestHandler).ToHandlerTypeName(), typeof(MyRequest).FullName}
                         },
                         new Dictionary<string, string>(), 
+                        false,
                         Guid.NewGuid().ToString());
 
                     await client.RegisterEndpointSite(receiverEndpointName, 

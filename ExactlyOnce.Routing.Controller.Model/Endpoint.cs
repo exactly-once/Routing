@@ -5,15 +5,24 @@ using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
+    public enum LegacyAutoSubscribeState
+    {
+        NotSet,
+        DoNotSubscribe,
+        Subscribe,
+        Subscribed,
+    }
+
     public class Endpoint
     {
         //Used by deserialization
         [JsonConstructor]
-        public Endpoint(string name, Dictionary<string, EndpointInstance> instances, Dictionary<string, MessageKind> recognizedMessages)
+        public Endpoint(string name, Dictionary<string, EndpointInstance> instances, Dictionary<string, MessageKind> recognizedMessages, LegacyAutoSubscribeState autoSubscribe)
         {
             Name = name;
             Instances = instances;
             RecognizedMessages = recognizedMessages;
+            AutoSubscribe = autoSubscribe;
         }
 
         // Used by event loop
@@ -23,13 +32,14 @@ namespace ExactlyOnce.Routing.Controller.Model
         }
 
         public Endpoint(string name)
-            : this(name, new Dictionary<string, EndpointInstance>(), new Dictionary<string, MessageKind>())
+            : this(name, new Dictionary<string, EndpointInstance>(), new Dictionary<string, MessageKind>(), LegacyAutoSubscribeState.NotSet)
         {
         }
 
         public string Name { get; }
         public Dictionary<string, EndpointInstance> Instances { get; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; }
+        public LegacyAutoSubscribeState AutoSubscribe { get; private set; }
 
         public IEnumerable<IEvent> OnHello(string instanceId, string site)
         {
@@ -68,8 +78,14 @@ namespace ExactlyOnce.Routing.Controller.Model
         }
 
         public IEnumerable<IEvent> OnStartup(string instanceId, string inputQueue,
-            Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers)
+            Dictionary<string, MessageKind> recognizedMessages, List<MessageHandlerInstance> messageHandlers, bool autoSubscribe)
         {
+            if (AutoSubscribe == LegacyAutoSubscribeState.NotSet)
+            {
+                AutoSubscribe =
+                    autoSubscribe ? LegacyAutoSubscribeState.Subscribe : LegacyAutoSubscribeState.DoNotSubscribe;
+            }
+
             List<string> affectedMessageTypes;
             if (!Instances.TryGetValue(instanceId, out var instance))
             {
@@ -206,12 +222,21 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
             foreach (var addedHandler in newHandlers.Except(oldHandlers, MessageHandlerInstance.NameHandledMessageComparer))
             {
-                yield return new MessageHandlerAdded(addedHandler.Name, addedHandler.HandledMessage, RecognizedMessages[addedHandler.HandledMessage], Name, site);
+                var messageKind = RecognizedMessages[addedHandler.HandledMessage];
+                var autoSubscribe = AutoSubscribe == LegacyAutoSubscribeState.Subscribe && messageKind == MessageKind.Event;
+
+                yield return new MessageHandlerAdded(addedHandler.Name, addedHandler.HandledMessage, 
+                    messageKind, Name, site, autoSubscribe);
             }
 
             foreach (var removedHandler in oldHandlers.Except(newHandlers, MessageHandlerInstance.NameHandledMessageComparer))
             {
                 yield return new MessageHandlerRemoved(removedHandler.Name, removedHandler.HandledMessage, Name, site);
+            }
+
+            if (AutoSubscribe == LegacyAutoSubscribeState.Subscribe)
+            {
+                AutoSubscribe = LegacyAutoSubscribeState.Subscribed;
             }
         }
 

@@ -72,6 +72,7 @@ namespace ExactlyOnce.Routing.Client
             Dictionary<string, MessageKind> recognizedMessages,
             Dictionary<string, string> messageHandlersMap,
             Dictionary<string, string> legacyDestinations,
+            bool autoSubscribe,
             string requestId)
         {
             var payload = new EndpointReportRequest
@@ -82,6 +83,7 @@ namespace ExactlyOnce.Routing.Client
                 MessageHandlers = messageHandlersMap,
                 LegacyDestinations = legacyDestinations,
                 InstanceId = instanceId,
+                AutoSubscribe = autoSubscribe,
                 ReportId = requestId
             };
 
