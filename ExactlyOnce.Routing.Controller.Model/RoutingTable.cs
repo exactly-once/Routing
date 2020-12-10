@@ -163,14 +163,24 @@ namespace ExactlyOnce.Routing.Controller.Model
                 Sites[e.Site] = newSite;
             }
 
-            foreach (var siteInstances in Sites.Values)
-            {
-                siteInstances.RemoveAll(x =>
-                    x.InstanceId == e.InstanceId && x.EndpointName == e.Endpoint //managed instance
-                    || x.InstanceId == null && e.InstanceId != null && x.InputQueue == e.InputQueue);
-            }
+            //Find instance that has the same endpoint name and instance id or one of the instance ids is null
+            var existing = Sites
+                .SelectMany(kvp => kvp.Value.Select(v => new {instance = v, site = kvp.Key}))
+                .FirstOrDefault(x => x.instance.EndpointName == e.Endpoint && (x.instance.InstanceId == null || e.InstanceId == null || x.instance.InstanceId == e.InstanceId));
 
-            newSite.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId, e.InputQueue));
+            //Move
+            if (existing != null)
+            {
+                Sites[existing.site].Remove(existing.instance);
+                newSite.Add(existing.instance);
+
+                existing.instance.Update(e.InputQueue, e.InstanceId);
+            }
+            else
+            {
+                newSite.Add(new EndpointInstanceId(e.Endpoint, e.InstanceId, e.InputQueue));
+
+            }
 
             if (!DestinationSiteToNextHopMapping.ContainsKey(e.Site))
             {

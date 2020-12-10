@@ -13,7 +13,7 @@ using Conventions = NServiceBus.AcceptanceTesting.Customization.Conventions;
 namespace ExactlyOnce.Routing.AcceptanceTests
 {
     [TestFixture]
-    public class When_migrating_a_command_handler : NServiceBusAcceptanceTest
+    public class When_migrating_sender_first : NServiceBusAcceptanceTest
     {
         [Test]
         public async Task Should_continue_delivering_commands_to_appointed_destination()
@@ -37,7 +37,7 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                 .WithManagedEndpoint<Context, Sender>("a", "Router", b => b.CustomConfig(cfg =>
                 {
                     var routing = cfg.GetSettings().Get<ExactlyOnceRoutingSettings>();
-                    routing.LegacyMigration.RouteToEndpoint(typeof(MyRequest),
+                    routing.EnableLegacyMigrationMode().RouteToEndpoint(typeof(MyRequest),
                         Conventions.EndpointNamingConvention(typeof(Receiver)));
                 }).When(c => c.EndpointsStarted, s => s.Send(new MyRequest())))
                 .WithEndpoint<Receiver>()

@@ -13,12 +13,18 @@ namespace ExactlyOnce.Routing.Controller.Model
         }
 
         public string EndpointName { get; }
-        public string InstanceId { get; }
+        public string InstanceId { get; private set; }
         public string InputQueue { get; private set; }
 
-        public void UpdateInputQueue(string inputQueue)
+        public void Update(string inputQueue, string instanceId)
         {
+            if (InstanceId != null && instanceId == null)
+            {
+                //We don't update managed instance with legacy instance
+                return;
+            }
             InputQueue = inputQueue;
+            InstanceId = instanceId;
         }
     }
 }

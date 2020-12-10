@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using ExactlyOnce.Routing.Endpoint.Model;
 using NServiceBus.Pipeline;
 using NServiceBus.Routing;
 
@@ -38,17 +37,17 @@ namespace ExactlyOnce.Routing.NServiceBus
                 return null;
             }
 
-            return new MapBasedRoutingStrategy(messageType, newRoutingSlip);
+            return new RoutingSlipRoutingStrategy(messageType, newRoutingSlip);
         }
 
-        public IEnumerable<RoutingStrategy> Route(Type messageType, IOutgoingContext context)
+        public IEnumerable<RoutingSlipRoutingStrategy> Route(Type messageType, IOutgoingContext context)
         {
             var explicitDestinationSite = GetDestinationSite(context);
             var routes = routingTable.GetRoutesFor(messageType, explicitDestinationSite, context.Headers);
 
             foreach (var destination in routes)
             {
-                yield return new MapBasedRoutingStrategy(messageType.FullName, destination);
+                yield return new RoutingSlipRoutingStrategy(messageType.FullName, destination);
             }
         }
 
@@ -57,25 +56,6 @@ namespace ExactlyOnce.Routing.NServiceBus
             return context.Extensions.TryGet<ExplicitSite>(out var siteSpec) 
                 ? siteSpec.Site 
                 : null;
-        }
-
-        class MapBasedRoutingStrategy : RoutingStrategy
-        {
-            readonly string routedType;
-            readonly RoutingSlip routingSlip;
-
-            public MapBasedRoutingStrategy(string routedType, RoutingSlip routingSlip)
-            {
-                this.routedType = routedType;
-                this.routingSlip = routingSlip;
-            }
-
-            public override AddressTag Apply(Dictionary<string, string> headers)
-            {
-                routingSlip.ApplyTo(headers);
-                headers["ExactlyOnce.Routing.RoutedType"] = routedType;
-                return new UnicastAddressTag(routingSlip.NextHopQueue);
-            }
         }
     }
 }

@@ -6,6 +6,8 @@ using NServiceBus.Hosting;
 using NServiceBus.Routing;
 using NServiceBus.Transport;
 using NServiceBus.Unicast;
+using NServiceBus.Unicast.Messages;
+using NServiceBus.Unicast.Subscriptions.MessageDrivenSubscriptions;
 
 // Features are always defined in NServiceBus namespace
 // ReSharper disable once CheckNamespace
@@ -17,6 +19,11 @@ namespace NServiceBus
     {
         protected override void Setup(FeatureConfigurationContext context)
         {
+            if (context.Settings.TryGet("NServiceBus.Subscriptions.EnableMigrationMode", out bool enabled) && enabled)
+            {
+                throw new Exception("ExactlyOnce routing is not compatible with subscription migration mode.");
+            }
+
             var conventions = context.Settings.Get<Conventions>();
 
             var settings = context.Settings.Get<ExactlyOnceRoutingSettings>();
@@ -37,14 +44,18 @@ namespace NServiceBus
 
             var routingControllerClient = new RoutingControllerClient(settings.ControllerUrl);
 
-            var legacyRoutingLogic = new LegacyRoutingLogic(
-                routingControllerClient,
-                context.Settings.EndpointName(),
+            LegacyRoutingLogic legacyRoutingLogic = null;
 
-                settings.LegacyMigration.LegacyDestinations,
-                distributionPolicy,
-                endpointInstances,
-                x => transportInfra.ToTransportAddress(LogicalAddress.CreateRemoteAddress(x)));
+            if (settings.MigrationSettings != null)
+            {
+                legacyRoutingLogic = new LegacyRoutingLogic(
+                    routingControllerClient,
+                    context.Settings.EndpointName(),
+                    settings.MigrationSettings.LegacyDestinations,
+                    distributionPolicy,
+                    endpointInstances,
+                    x => transportInfra.ToTransportAddress(LogicalAddress.CreateRemoteAddress(x)));
+            }
 
             context.Container.ConfigureComponent(b =>
             {
@@ -105,16 +116,31 @@ namespace NServiceBus
                     hostInfo.HostId.ToString(), 
                     messageKindMap, 
                     messageHandlersMap,
-                    settings.LegacyMigration.LegacyDestinations,
+                    settings.EnableLegacyMigrationMode().LegacyDestinations,
                     b.Build<IDispatchMessages>(),
-                    x => legacyRoutingLogic.SetSite(x));
+                    x => legacyRoutingLogic?.SetSite(x));
             }, DependencyLifecycle.SingleInstance);
             context.RegisterStartupTask(b => b.Build<RoutingTableManager>());
 
             context.Container.ConfigureComponent(b => new RoutingLogic(b.Build<IRoutingTable>()), DependencyLifecycle.SingleInstance);
 
-            context.Pipeline.Replace("UnicastPublishRouterConnector", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
-            context.Pipeline.Replace("MulticastPublishRouterBehavior", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
+            if (settings.MigrationSettings != null)
+            {
+                if (transportInfra.OutboundRoutingPolicy.Publishes == OutboundRoutingType.Multicast)
+                {
+                    context.Pipeline.Replace("MulticastPublishRouterBehavior", b => new LegacyNativePublishRoutingConnector(b.Build<RoutingLogic>()));
+                }
+                else
+                {
+                    context.Pipeline.Replace("UnicastPublishRouterConnector", b => new LegacyStorageDrivenPublishRoutingConnector(b.Build<RoutingLogic>(), b.Build<ISubscriptionStorage>(), b.Build<MessageMetadataRegistry>()));
+                }
+            }
+            else
+            {
+                context.Pipeline.Replace("UnicastPublishRouterConnector", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
+                context.Pipeline.Replace("MulticastPublishRouterBehavior", b => new PublishRoutingConnector(b.Build<RoutingLogic>()));
+            }
+
             context.Pipeline.Replace("UnicastSendRouterConnector", b => new SendRoutingConnector(b.Build<RoutingLogic>(), legacyRoutingLogic));
 
             context.Pipeline.Replace("MessageDrivenSubscribeTerminator", new NullSubscribeTerminator(), "handles subscribe operations");

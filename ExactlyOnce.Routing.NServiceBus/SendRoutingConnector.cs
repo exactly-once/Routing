@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using NServiceBus;
 using NServiceBus.Pipeline;
+using NServiceBus.Routing;
 using NServiceBus.Unicast.Queuing;
 
 namespace ExactlyOnce.Routing.NServiceBus
@@ -21,15 +22,16 @@ namespace ExactlyOnce.Routing.NServiceBus
         public override async Task Invoke(IOutgoingSendContext context, Func<IOutgoingLogicalMessageContext, Task> stage)
         {
             var messageType = context.Message.MessageType;
-            var routingStrategies = routingLogic.Route(messageType, context).ToList();
+            var routingStrategies = routingLogic.Route(messageType, context).ToList<RoutingStrategy>();
+
+            if (routingStrategies.Count == 0 && legacyRoutingLogic != null)
+            {
+                routingStrategies = legacyRoutingLogic.Route(context);
+            }
 
             if (routingStrategies.Count == 0)
             {
-                routingStrategies = legacyRoutingLogic.Route(context);
-                if (routingStrategies.Count == 0)
-                {
-                    throw new Exception($"No routes found for message {messageType.FullName}");
-                }
+                throw new Exception($"No routes found for message {messageType.FullName}");
             }
 
             context.Headers[Headers.MessageIntent] = MessageIntentEnum.Send.ToString();

@@ -13,10 +13,15 @@ namespace NServiceBus
         internal BlobContainerClient ControllerContainerClient { get; set; }
         internal string RouterName { get; private set; }
         internal string SiteName { get; private set; }
-        public LegacyMigrationSettings LegacyMigration { get; } = new LegacyMigrationSettings();
+
+        public LegacyMigrationSettings EnableLegacyMigrationMode()
+        {
+            return MigrationSettings ??= new LegacyMigrationSettings();
+        }
 
         internal SiteRoutingPolicyConfiguration SiteRoutingPolicyConfiguration = new SiteRoutingPolicyConfiguration();
         internal DistributionPolicyConfiguration DistributionPolicyConfiguration = new DistributionPolicyConfiguration();
+        internal LegacyMigrationSettings MigrationSettings;
 
         /// <summary>
         /// Declare that this endpoint communicates with other sites via the specified router.

@@ -297,28 +297,43 @@ namespace ExactlyOnce.Routing.Controller.Model
         {
             MessageType = e.HandledMessageType;
 
-            var destination = Destinations.FirstOrDefault(x => x.Handler == LegacyHandlerType && x.Endpoint == e.Endpoint);
-            if (destination != null)
+            var legacyDestination = Destinations.FirstOrDefault(x => x.Handler == LegacyHandlerType && x.Endpoint == e.Endpoint);
+            if (legacyDestination != null)
             {
-                destination.HandlerAdded(e.Site);
-                if (destination.State != DestinationState.Inactive)
+                legacyDestination.HandlerAdded(e.Site);
+                if (legacyDestination.State != DestinationState.Inactive)
                 {
-                    yield return new RouteChanged(MessageType, destination.Handler, destination.Endpoint,
-                        destination.Sites, destination.Handler);
+                    yield return new RouteChanged(MessageType, legacyDestination.Handler, legacyDestination.Endpoint,
+                        legacyDestination.Sites, legacyDestination.Handler);
                 }
             }
             else
             {
-                destination = new Destination(LegacyHandlerType, e.Endpoint, DestinationState.Inactive, MessageKind.Message, new List<string> {e.Site});
-                Destinations.Add(destination);
-
-                var existingActiveDestination = Destinations.Any(x => x.State == DestinationState.Active);
-                if (!existingActiveDestination)
+                var destination = Destinations.FirstOrDefault(x => x.Endpoint == e.Endpoint);
+                if (destination != null)
                 {
-                    destination.Activate();
+                    var existingActiveDestination = Destinations.Any(x => x.State == DestinationState.Active);
+                    if (!existingActiveDestination)
+                    {
+                        destination.Activate();
 
-                    var routeAdded = new RouteAdded(MessageType, destination.Handler, destination.Endpoint, destination.Sites);
-                    yield return new MessageRoutingChanged(routeAdded, new List<RouteRemoved>());
+                        var routeAdded = new RouteAdded(MessageType, destination.Handler, destination.Endpoint, destination.Sites);
+                        yield return new MessageRoutingChanged(routeAdded, new List<RouteRemoved>());
+                    }
+                }
+                else
+                {
+                    legacyDestination = new Destination(LegacyHandlerType, e.Endpoint, DestinationState.Inactive, MessageKind.Message, new List<string> { e.Site });
+                    Destinations.Add(legacyDestination);
+
+                    var existingActiveDestination = Destinations.Any(x => x.State == DestinationState.Active);
+                    if (!existingActiveDestination)
+                    {
+                        legacyDestination.Activate();
+
+                        var routeAdded = new RouteAdded(MessageType, legacyDestination.Handler, legacyDestination.Endpoint, legacyDestination.Sites);
+                        yield return new MessageRoutingChanged(routeAdded, new List<RouteRemoved>());
+                    }
                 }
             }
         }
