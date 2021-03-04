@@ -48,7 +48,7 @@ namespace ExactlyOnce.Routing.Client
         {
             try
             {
-                var response = await httpClient.GetAsync($"GetRoutingTable").ConfigureAwait(false);
+                var response = await httpClient.GetAsync("GetRoutingTable").ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     return null;

@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ExactlyOnce.Router.Core\ExactlyOnce.Router.Core.csproj" />
+    <ProjectReference Include="..\ExactlyOnce.Routing.ApiContract\ExactlyOnce.Routing.ApiContract.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure\ExactlyOnce.Routing.Controller.Infrastructure.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Model\ExactlyOnce.Routing.Controller.Model.csproj" />

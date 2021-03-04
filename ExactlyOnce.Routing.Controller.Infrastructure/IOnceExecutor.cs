@@ -16,19 +16,20 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     {
         readonly ExactlyOnceProcessor processor;
         readonly Subscriptions subscriptions;
+        readonly Search search;
         readonly string requestId;
         readonly string stateId;
 
-        public OnceExecutor(ExactlyOnceProcessor processor, Subscriptions subscriptions, string requestId, string stateId)
+        public OnceExecutor(ExactlyOnceProcessor processor, Subscriptions subscriptions, Search search, string requestId, string stateId)
         {
             this.processor = processor;
             this.subscriptions = subscriptions;
+            this.search = search;
             this.requestId = requestId;
             this.stateId = stateId;
         }
 
-        public async Task<EventMessage[]> Once(
-            Func<TEntity, IEnumerable<IEvent>> action,
+        public async Task<EventMessage[]> Once(Func<TEntity, IEnumerable<IEvent>> action,
             Func<TEntity> constructor)
         {
             var maxDelay = TimeSpan.FromSeconds(20);
@@ -45,7 +46,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                     var result = await processor.Process(operationId, entityKey, typeof(TState), state =>
                     {
                         var eventDrivenState = (State<TEntity>) state;
-                        var events = eventDrivenState.Invoke(action, constructor, subscriptions).ToArray();
+                        var events = eventDrivenState.Invoke(action, constructor, search.GetSearchKey, subscriptions).ToArray();
                         return events;
                     });
 

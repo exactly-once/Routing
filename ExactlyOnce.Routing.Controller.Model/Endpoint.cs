@@ -5,14 +5,6 @@ using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Controller.Model
 {
-    public enum LegacyAutoSubscribeState
-    {
-        NotSet,
-        DoNotSubscribe,
-        Subscribe,
-        Subscribed,
-    }
-
     public class Endpoint
     {
         //Used by deserialization

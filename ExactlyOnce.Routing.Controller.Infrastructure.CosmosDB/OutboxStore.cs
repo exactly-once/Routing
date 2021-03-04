@@ -40,14 +40,14 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             container = await database.CreateContainerIfNotExistsAsync(new ContainerProperties
             {
                 Id = configuration.ContainerId,
-                PartitionKeyPath = "/None",
+                PartitionKeyPath = "/stateId",
                 DefaultTimeToLive = -1 //No expiration unless explicitly set on item level
             }).ConfigureAwait(false);
         }
 
-        public async Task<OutboxItem> Get(string id, CancellationToken cancellationToken = default)
+        public async Task<OutboxItem> Get(string stateId, string id, CancellationToken cancellationToken = default)
         {
-            using var response = await container.ReadItemStreamAsync(id, PartitionKey.None, cancellationToken: cancellationToken)
+            using var response = await container.ReadItemStreamAsync(id, new PartitionKey(stateId), cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             if (response.StatusCode == HttpStatusCode.NotFound)
@@ -67,9 +67,9 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
         }
 
 
-        public async Task Commit(string transactionId, CancellationToken cancellationToken = default)
+        public async Task Commit(string stateId, string transactionId, CancellationToken cancellationToken = default)
         {
-            var outboxItem = await Get(transactionId, cancellationToken);
+            var outboxItem = await Get(stateId, transactionId, cancellationToken);
 
             //HINT: outbox item has already been committed
             if (outboxItem == null)
@@ -80,7 +80,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             outboxItem.Id = outboxItem.RequestId;
             outboxItem.TimeToLiveSeconds = (int)configuration.RetentionPeriod.TotalSeconds;
 
-            var batch = container.CreateTransactionalBatch(PartitionKey.None)
+            var batch = container.CreateTransactionalBatch(new PartitionKey(stateId))
                 .DeleteItem(transactionId)
                 .UpsertItem(outboxItem);
 
@@ -108,7 +108,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                 await streamWriter.FlushAsync().ConfigureAwait(false);
                 stream.Position = 0;
 
-                var response = await container.UpsertItemStreamAsync(stream, PartitionKey.None, cancellationToken: cancellationToken);
+                var response = await container.UpsertItemStreamAsync(stream, new PartitionKey(outboxItem.StateId), cancellationToken: cancellationToken);
 
                 // HINT: Outbox item should be created or re-updated (if there was a failure
                 //       during previous commit).
@@ -120,9 +120,9 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             }
         }
 
-        public Task Delete(string itemId, CancellationToken cancellationToken = default)
+        public Task Delete(string stateId, string itemId, CancellationToken cancellationToken = default)
         {
-            return container.DeleteItemAsync<OutboxItem>(itemId, PartitionKey.None, cancellationToken: cancellationToken);
+            return container.DeleteItemAsync<OutboxItem>(itemId, new PartitionKey(stateId), cancellationToken: cancellationToken);
         }
     }
 }

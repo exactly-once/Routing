@@ -19,5 +19,6 @@
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.NServiceBus\ExactlyOnce.Routing.NServiceBus.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.SelfHostedController\ExactlyOnce.Routing.SelfHostedController.csproj" />
+    <ProjectReference Include="..\Samples\SampleInfrastructure\SampleInfrastructure.csproj" />
   </ItemGroup>
 </Project>

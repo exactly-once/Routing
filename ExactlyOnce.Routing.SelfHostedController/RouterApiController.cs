@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -21,6 +22,18 @@ namespace ExactlyOnce.Routing.SelfHostedController
             this.sender = sender;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> ListRouters()
+        {
+
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRouterInfo(string routerName)
+        {
+
+        }
+
         [HttpPost]
         [Route("ProcessRouterReport")]
         public async Task<IActionResult> ProcessRouterReport(RouterReportRequest request)
@@ -40,12 +53,6 @@ namespace ExactlyOnce.Routing.SelfHostedController
             return Ok();
         }
 
-        public class RouterReportRequest
-        {
-            public string ReportId { get; set; }
-            public string RouterName { get; set; }
-            public string InstanceId { get; set; }
-            public Dictionary<string, string> SiteInterfaces { get; set; }
-        }
+        
     }
 }

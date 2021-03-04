@@ -25,13 +25,16 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     public abstract class State<T> : State
     {
         public T Data { get; set; }
+        public string SearchKey { get; set; }
 
         public IEnumerable<EventMessage> Invoke(
             Func<T, IEnumerable<IEvent>> action, 
             Func<T> constructor,
+            Func<T, string> getSearchKey,
             Subscriptions subscriptions)
         {
             Data ??= constructor();
+            SearchKey = getSearchKey(Data);
             var generatedEvents = action(Data);
             return subscriptions.ToMessages(generatedEvents, this);
         }

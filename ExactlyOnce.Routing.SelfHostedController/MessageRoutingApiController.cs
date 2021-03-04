@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Logging;
+using Destination = ExactlyOnce.Routing.Controller.Model.Destination;
 
 namespace ExactlyOnce.Routing.SelfHostedController
 {
@@ -40,13 +40,13 @@ namespace ExactlyOnce.Routing.SelfHostedController
             }
 
             var destinations = state.Data.Destinations != null
-                ? state.Data.Destinations.Select(x => new Destination
+                ? state.Data.Destinations.Select(x => new ApiContract.Destination
                 {
                     HandlerType = x.Handler,
                     EndpointName = x.Endpoint,
                     Active = x.State == DestinationState.Active
                 }).ToList()
-                : new List<Destination>();
+                : new List<ApiContract.Destination>();
             var response = new MessageDestinations
             {
                 MessageType = state.Data.MessageType,
@@ -130,52 +130,6 @@ namespace ExactlyOnce.Routing.SelfHostedController
             }
 
             return Ok();
-        }
-
-        public class MessageDestinations
-        {
-            public string MessageType { get; set; }
-            public List<Destination> Destinations { get; set; }
-        }
-
-        public class Destination
-        {
-            public string EndpointName { get; set; }
-            public string HandlerType { get; set; }
-            public bool Active { get; set; }
-        }
-
-        public class SubscribeRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
-            public string ReplacedHandlerType { get; set; }
-        }
-
-        public class UnsubscribeRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
-        }
-
-        public class AppointRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
-        }
-
-        public class DismissRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
         }
     }
 }

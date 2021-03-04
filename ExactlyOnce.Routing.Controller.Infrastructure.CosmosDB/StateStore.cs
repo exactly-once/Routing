@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -25,6 +26,33 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
         public async Task Initialize()
         {
             database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId).ConfigureAwait(false);
+        }
+
+        public async Task<IReadOnlyCollection<string>> List(Type stateType, string keyword, CancellationToken cancellationToken = default)
+        {
+            Container container = await database
+                .DefineContainer(stateType.Name, "/id")
+                .CreateIfNotExistsAsync()
+                .ConfigureAwait(false);
+
+            var queryDefinition = new QueryDefinition($"select id from {stateType.Name}");
+            var feedIterator = container.GetItemQueryStreamIterator(
+                queryDefinition,
+                null,
+                new QueryRequestOptions());
+            
+             while (feedIterator.HasMoreResults)
+             {
+                 using (var response = await feedIterator.ReadNextAsync(cancellationToken))
+                 {
+                     using (var sr = new StreamReader(response.Content))
+                     using (var jtr = new JsonTextReader(sr))
+                     {
+                        JObject result = JObject.Load(jtr);
+                     }
+                 }
+             }
+            await container.GetItemQueryStreamIterator(new QueryDefinition("")).
         }
 
         public async Task<(State, string)> Load(string stateId, Type stateType, CancellationToken cancellationToken = default)

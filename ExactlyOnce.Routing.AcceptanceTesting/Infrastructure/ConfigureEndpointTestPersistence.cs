@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using NServiceBus;
 using NServiceBus.AcceptanceTesting.Support;
 using NUnit.Framework;
+using SampleInfrastructure.TestPersistence;
 
 public class ConfigureEndpointTestPersistence
 {

@@ -27,7 +27,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
                     var subscriptions = new Subscriptions();
                     subscriptions.Subscribe<RouteTableStorageHandler, RoutingTableChanged>(e => "");
                     subscriptions.Subscribe<SignalRHandler, RoutingTableChanged>(e => "");
-                    collection.AddSingleton(new OnceExecutorFactory(new ExactlyOnceProcessor(outboxStore, stateStore), subscriptions));
+                    collection.AddSingleton(new OnceExecutorFactory(new ExactlyOnceProcessor(outboxStore, stateStore), subscriptions, new Search()));
                     collection.AddSingleton(stateStore);
                     collection.AddSingleton(sp =>
                         new NServiceBusRawHostedService<T>(queueName, transportCustomization, async () =>

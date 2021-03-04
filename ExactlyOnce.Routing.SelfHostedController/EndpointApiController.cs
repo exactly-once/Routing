@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using MessageKind = ExactlyOnce.Routing.Controller.Model.MessageKind;
 
 namespace ExactlyOnce.Routing.SelfHostedController
 {
@@ -34,7 +36,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
                 ? request.MessageHandlers.Select(kvp => new MessageHandlerInstance(kvp.Key, kvp.Value)).ToList()
                 : new List<MessageHandlerInstance>();
 
-            var messageKinds = request.RecognizedMessages ?? new Dictionary<string, MessageKind>();
+            var messageKinds = request.RecognizedMessages ?? new Dictionary<string, MessageKind>(); //TODO: Map enums
 
             var messages = await executor.Once(
                 e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers, request.AutoSubscribe),
@@ -84,35 +86,6 @@ namespace ExactlyOnce.Routing.SelfHostedController
             }
 
             return Ok();
-        }
-
-        public class LegacyDestinationRequest
-        {
-            public string RequestId { get; set; }
-            public string Site { get; set; }
-            public string MessageType { get; set; }
-            public string SendingEndpointName { get; set; }
-            public string DestinationEndpointName { get; set; }
-            public string DestinationQueue { get; set; }
-        }
-
-        public class EndpointReportRequest
-        {
-            public string ReportId { get; set; }
-            public string EndpointName { get; set; }
-            public string InputQueue { get; set; }
-            public string InstanceId { get; set; }
-            public Dictionary<string, string> MessageHandlers { get; set; }
-            public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
-            public bool AutoSubscribe { get; set; }
-        }
-
-        public class EndpointHelloRequest
-        {
-            public string ReportId { get; set; }
-            public string EndpointName { get; set; }
-            public string InstanceId { get; set; }
-            public string Site { get; set; }
         }
     }
 }

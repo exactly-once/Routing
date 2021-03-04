@@ -6,14 +6,18 @@ using NServiceBus.Features;
 // ReSharper disable once CheckNamespace
 namespace NServiceBus
 {
-    //TODO: Self-hosted version (SQL, SignalR Core)
-    //TODO: Acceptance tests
-    //TODO: Mixed-mode and migration
-    //TODO: Authorization
-    //TODO: Visualizations (graphviz)
-    //TODO: DLQ proxy for ServiceControl
-    //TODO: Partitioning of Outbox collection
+    //TODO: Generic query API (search, list_all, get_details)
     //TODO: Production-quality command line tool
+    //TODO: Visualizations (graphviz)
+    //TODO: SQL persistence
+    //TODO: Authorization
+    //TODO: DLQ proxy for ServiceControl
+
+    //TODO: Change notifications
+    //Add new signalrR hub that will post events when an entity changes. These notifications will be subscribed by the client (web or console)
+    //And the client will be re-loading entities when they change. This way the client will always have the current view of the system
+    //Filtering etc will always be done on the client as the amount of data expected to be there is going to be relatively small
+    //(up to hundreds of items of each type)
 
     /// <summary>
     /// Extensions for configuring blueprint-based routing functionality.

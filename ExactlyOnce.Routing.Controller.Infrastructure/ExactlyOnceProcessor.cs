@@ -28,7 +28,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                     .ConfigureAwait(false);
             }
 
-            var outboxState = await outboxStore.Get(requestId, cancellationToken);
+            var outboxState = await outboxStore.Get(stateId, requestId, cancellationToken);
 
             if (outboxState != null)
             {
@@ -42,6 +42,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             outboxState = new OutboxItem
             {
                 Id = state.TxId.ToString(),
+                StateId = stateId,
                 RequestId = requestId,
                 SideEffect = JsonConvert.SerializeObject(sideEffect)
             };
@@ -58,7 +59,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             }
             catch (Exception e) when (!(e is OperationCanceledException))
             {
-                await outboxStore.Delete(outboxState.Id, cancellationToken)
+                await outboxStore.Delete(stateId, outboxState.Id, cancellationToken)
                     .ConfigureAwait(false);
                 throw;
             }
@@ -76,7 +77,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                 throw new InvalidOperationException($"No pending transaction for state id {stateId}.");
             }
 
-            await outboxStore.Commit(state.TxId.Value.ToString(), cancellationToken)
+            await outboxStore.Commit(stateId, state.TxId.Value.ToString(), cancellationToken)
                 .ConfigureAwait(false);
 
             state.TxId = null;

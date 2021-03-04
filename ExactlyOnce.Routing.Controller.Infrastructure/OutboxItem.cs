@@ -6,6 +6,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     {
         [JsonProperty("id")] public string Id { get; set; }
 
+        [JsonProperty("stateId")] public string StateId { get; set; }
+
         [JsonProperty("requestId")] public string RequestId { get; set; }
 
         [JsonProperty("sideEffects")] public string SideEffect { get; set; }

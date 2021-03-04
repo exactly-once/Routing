@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
@@ -57,11 +58,6 @@ namespace ExactlyOnce.Routing.SelfHostedController
             return Ok(state.Data);
         }
 
-        public class ConfigureEndpointSiteRoutingRequest
-        {
-            public string RequestId { get; set; }
-            public string EndpointName { get; set; }
-            public string Policy { get; set; }
-        }
+        
     }
 }
