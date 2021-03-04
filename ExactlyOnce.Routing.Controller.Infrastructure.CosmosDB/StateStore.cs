@@ -36,26 +36,31 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
                 .CreateIfNotExistsAsync()
                 .ConfigureAwait(false);
 
-            var queryDefinition = new QueryDefinition($"select id, SearchKey from {stateType.Name}");
+            var queryDefinition = new QueryDefinition("SELECT c.id as Id, c.SearchKey as Name FROM c");
             var options = new QueryRequestOptions();
             var feedIterator = container.GetItemQueryStreamIterator(
                 queryDefinition,
                 null,
                 options);
-            
-             while (feedIterator.HasMoreResults)
-             {
-                 using (var response = await feedIterator.ReadNextAsync(cancellationToken))
-                 {
-                     using (var sr = new StreamReader(response.Content))
-                     using (var jtr = new JsonTextReader(sr))
-                     {
-                        JObject result = JObject.Load(jtr);
-                     }
-                 }
-             }
 
-             return new List<ListResult>();
+            var allResults = new List<ListResult>();
+
+            while (feedIterator.HasMoreResults)
+            {
+                using (var response = await feedIterator.ReadNextAsync(cancellationToken))
+                {
+                    using (var streamReader = new StreamReader(response.Content))
+                    {
+                        using (var textReader = new JsonTextReader(streamReader))
+                        {
+                            var listResponse = serializer.Deserialize<ListResponse>(textReader);
+                            allResults.AddRange(listResponse.Documents);
+                        }
+                    }
+                }
+            }
+
+            return allResults;
         }
 
         public async Task<(State, string)> Load(string stateId, Type stateType, CancellationToken cancellationToken = default)

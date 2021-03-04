@@ -110,7 +110,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
         }
 
         [HttpGet]
-        [Route("ListEndpoints")]
+        [Route("ListEndpoints/{keyword}")]
         public async Task<IActionResult> ListEndpoints(string keyword)
         {
             var result = await stateStore.List(typeof(EndpointState), keyword, CancellationToken.None);

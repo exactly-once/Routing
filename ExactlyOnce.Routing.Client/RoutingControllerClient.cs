@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using Newtonsoft.Json;
 
 namespace ExactlyOnce.Routing.Client
@@ -18,6 +19,30 @@ namespace ExactlyOnce.Routing.Client
             {
                 BaseAddress = new Uri(baseUrl)
             };
+        }
+
+        public async Task<ListResponse> ListEndpoints(string keyword)
+        {
+            try
+            {
+                var response = await httpClient.GetAsync($"ListEndpoints/{keyword}").ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    return null;
+                }
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Unexpected status code when listing endpoints for keyword {keyword}: {response.StatusCode}: {response.ReasonPhrase}.");
+                }
+
+                var contentString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                return JsonConvert.DeserializeObject<ListResponse>(contentString);
+
+            }
+            catch (HttpRequestException e)
+            {
+                throw new Exception($"Error while listing endpoints for keyword {keyword}.", e);
+            }
         }
 
         public async Task<MessageDestinations> GetDestinations(string messageType)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Client;
 using NServiceBus;
 using NServiceBus.AcceptanceTesting;

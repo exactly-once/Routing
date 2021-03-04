@@ -10,6 +10,7 @@ namespace ExactlyOnce.Routing.ApiContract
         public string InstanceId { get; set; }
         public Dictionary<string, string> MessageHandlers { get; set; }
         public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
+        public Dictionary<string, string> LegacyDestinations { get; set; }
         public bool AutoSubscribe { get; set; }
     }
 }

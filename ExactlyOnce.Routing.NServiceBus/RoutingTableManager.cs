@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Storage.Blobs;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Client;
 using ExactlyOnce.Routing.Endpoint.Model;
 using Microsoft.AspNetCore.SignalR.Client;

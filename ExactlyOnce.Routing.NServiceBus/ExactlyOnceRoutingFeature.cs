@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Client;
 using ExactlyOnce.Routing.NServiceBus;
 using NServiceBus.Features;

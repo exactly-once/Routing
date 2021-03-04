@@ -56,6 +56,8 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                 })
                 .Do("Appoint handler", async (context, client) =>
                 {
+                    var result = await client.ListEndpoints("dupa");
+
                     await client.Appoint(Conventions.EndpointNamingConvention(typeof(Receiver)), typeof(Receiver.MyRequestHandler),
                         typeof(MyRequest), Guid.NewGuid().ToString()).ConfigureAwait(false);
                     context.HandlerAppointed = true;
