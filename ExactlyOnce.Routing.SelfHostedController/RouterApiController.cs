@@ -22,18 +22,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
             this.sender = sender;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> ListRouters()
-        {
-
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetRouterInfo(string routerName)
-        {
-
-        }
-
+        
         [HttpPost]
         [Route("ProcessRouterReport")]
         public async Task<IActionResult> ProcessRouterReport(RouterReportRequest request)

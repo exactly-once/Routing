@@ -10,6 +10,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
         [JsonProperty("_transactionId")] public Guid? TxId { get; internal set; }
 
+        public string SearchKey { get; set; }
         public Inbox Inbox { get; set; } = new Inbox();
         public Outbox Outbox { get; set; } = new Outbox();
 
@@ -25,7 +26,6 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     public abstract class State<T> : State
     {
         public T Data { get; set; }
-        public string SearchKey { get; set; }
 
         public IEnumerable<EventMessage> Invoke(
             Func<T, IEnumerable<IEvent>> action, 

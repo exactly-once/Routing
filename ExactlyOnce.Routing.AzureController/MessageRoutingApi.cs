@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
@@ -80,39 +81,6 @@ namespace ExactlyOnce.Routing.AzureController
             }
 
             return new OkResult();
-        }
-
-        public class SubscribeRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
-            public string ReplacedHandlerType { get; set; }
-        }
-
-        public class UnsubscribeRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
-        }
-
-        public class AppointRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
-        }
-
-        public class DismissRequest
-        {
-            public string RequestId { get; set; }
-            public string MessageType { get; set; }
-            public string Endpoint { get; set; }
-            public string HandlerType { get; set; }
         }
     }
 }

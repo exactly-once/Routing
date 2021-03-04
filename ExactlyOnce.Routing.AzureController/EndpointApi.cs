@@ -1,12 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Endpoint = ExactlyOnce.Routing.Controller.Model.Endpoint;
+using MessageKind = ExactlyOnce.Routing.Controller.Model.MessageKind;
 
 namespace ExactlyOnce.Routing.AzureController
 {
@@ -18,11 +21,15 @@ namespace ExactlyOnce.Routing.AzureController
             [ExactlyOnce(requestId: "{reportId}", stateId: "{endpointName}")] IOnceExecutor<EndpointState, Endpoint> execute,
             [Queue("event-queue")] ICollector<EventMessage> eventCollector)
         {
-            var messageHandlers = request.MessageHandlers != null 
-                ? request.MessageHandlers.Select(kvp => new MessageHandlerInstance(kvp.Key, kvp.Value)).ToList() 
+            var messageHandlers = request.MessageHandlers != null
+                ? request.MessageHandlers.Select(kvp => new MessageHandlerInstance(kvp.Key, kvp.Value)).ToList()
                 : new List<MessageHandlerInstance>();
-            
-            var messageKinds = request.RecognizedMessages ?? new Dictionary<string, MessageKind>();
+
+            var messageKinds = request.RecognizedMessages == null
+                ? new Dictionary<string, MessageKind>()
+                : request.RecognizedMessages.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => MapMessageKind(kvp.Value));
 
             var messages = await execute.Once(
                 e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers, request.AutoSubscribe),
@@ -33,6 +40,18 @@ namespace ExactlyOnce.Routing.AzureController
                 eventCollector.Add(message);
             }
             return new OkResult();
+        }
+
+        static MessageKind MapMessageKind(ApiContract.MessageKind value)
+        {
+            return value switch
+            {
+                ApiContract.MessageKind.Command => MessageKind.Command,
+                ApiContract.MessageKind.Event => MessageKind.Event,
+                ApiContract.MessageKind.Message => MessageKind.Message,
+                ApiContract.MessageKind.Undefined => MessageKind.Undefined,
+                _ => throw new Exception($"Unrecognized message kind: {value}")
+            };
         }
 
         [FunctionName(nameof(ProcessEndpointHello))]
@@ -53,23 +72,5 @@ namespace ExactlyOnce.Routing.AzureController
             return new OkResult();
         }
 
-        public class EndpointReportRequest
-        {
-            public string ReportId { get; set; }
-            public string EndpointName { get; set; }
-            public string InputQueue { get; set; }
-            public string InstanceId { get; set; }
-            public Dictionary<string, string> MessageHandlers { get; set; }
-            public Dictionary<string, MessageKind> RecognizedMessages { get; set; }
-            public bool AutoSubscribe { get; set; }
-        }
-
-        public class EndpointHelloRequest
-        {
-            public string ReportId { get; set; }
-            public string EndpointName { get; set; }
-            public string InstanceId { get; set; }
-            public string Site { get; set; }
-        }
     }
 }

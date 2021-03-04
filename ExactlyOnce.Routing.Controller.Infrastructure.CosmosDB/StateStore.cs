@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
 {
@@ -28,18 +29,19 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
             database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId).ConfigureAwait(false);
         }
 
-        public async Task<IReadOnlyCollection<string>> List(Type stateType, string keyword, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyCollection<ListResult>> List(Type stateType, string keyword, CancellationToken cancellationToken = default)
         {
             Container container = await database
                 .DefineContainer(stateType.Name, "/id")
                 .CreateIfNotExistsAsync()
                 .ConfigureAwait(false);
 
-            var queryDefinition = new QueryDefinition($"select id from {stateType.Name}");
+            var queryDefinition = new QueryDefinition($"select id, SearchKey from {stateType.Name}");
+            var options = new QueryRequestOptions();
             var feedIterator = container.GetItemQueryStreamIterator(
                 queryDefinition,
                 null,
-                new QueryRequestOptions());
+                options);
             
              while (feedIterator.HasMoreResults)
              {
@@ -52,7 +54,8 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
                      }
                  }
              }
-            await container.GetItemQueryStreamIterator(new QueryDefinition("")).
+
+             return new List<ListResult>();
         }
 
         public async Task<(State, string)> Load(string stateId, Type stateType, CancellationToken cancellationToken = default)
