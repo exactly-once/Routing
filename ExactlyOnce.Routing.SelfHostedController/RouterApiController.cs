@@ -69,7 +69,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
         }
 
         [HttpGet]
-        [Route("Router/{id}")]
+        [Route("Router/{idOrName}")]
         public async Task<IActionResult> GetRouter(string idOrName)
         {
             if (!Guid.TryParse(idOrName, out var id))

@@ -56,11 +56,25 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                 })
                 .Do("Appoint handler", async (context, client) =>
                 {
-                    var result = await client.ListEndpoints("dupa");
-
                     await client.Appoint(Conventions.EndpointNamingConvention(typeof(Receiver)), typeof(Receiver.MyRequestHandler),
                         typeof(MyRequest), Guid.NewGuid().ToString()).ConfigureAwait(false);
                     context.HandlerAppointed = true;
+                })
+                .Do("Query state", async (context, client) =>
+                {
+                    var list = await client.ListEndpoints("SendingACommand");
+                    Assert.AreEqual(2, list.Items.Count);
+
+                    var senderInfoByName = await client.GetEndpoint(list.Items.First(x => x.Name.Contains("Sender")).Name);
+                    var receiverInfoById = await client.GetEndpoint(list.Items.First(x => x.Name.Contains("Receiver")).Id);
+
+                    Assert.AreEqual("SendingACommand.Sender", senderInfoByName.Name);
+                    var senderInstance = senderInfoByName.Instances.Single().Value;
+                    Assert.AreEqual("Alpha", senderInstance.Site);
+
+                    Assert.AreEqual("SendingACommand.Receiver", receiverInfoById.Name);
+                    var receiverInstance = receiverInfoById.Instances.Single().Value;
+                    Assert.AreEqual("Bravo", receiverInstance.Site);
                 })
                 .Done(c => c.RequestReceived)
                 .Run();

@@ -117,7 +117,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
         }
 
         [HttpGet]
-        [Route("Endpoint/{id}")]
+        [Route("Endpoint/{idOrName}")]
         public async Task<IActionResult> GetEndpoint(string idOrName)
         {
             if (!Guid.TryParse(idOrName, out var id))
