@@ -59,18 +59,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
             return Ok();
         }
 
-        static MessageKind MapMessageKind(ApiContract.MessageKind value)
-        {
-            return value switch
-            {
-                ApiContract.MessageKind.Command => MessageKind.Command,
-                ApiContract.MessageKind.Event => MessageKind.Event,
-                ApiContract.MessageKind.Message => MessageKind.Message,
-                ApiContract.MessageKind.Undefined => MessageKind.Undefined,
-                _ => throw new Exception($"Unrecognized message kind: {value}")
-            };
-        }
-
+        
         [HttpPost]
         [Route("ProcessEndpointHello")]
         public async Task<IActionResult> ProcessEndpointHello(EndpointHelloRequest request)
@@ -126,5 +115,75 @@ namespace ExactlyOnce.Routing.SelfHostedController
 
             return Ok(response);
         }
+
+        [HttpGet]
+        [Route("Endpoint/{id}")]
+        public async Task<IActionResult> GetEndpoint(string idOrName)
+        {
+            if (!Guid.TryParse(idOrName, out var id))
+            {
+                id = DeterministicGuid.MakeId(idOrName);
+            }
+            var(state, etag) = await stateStore.Load<EndpointState>(id.ToString(), CancellationToken.None);
+            if (etag == null || state.Data == null)
+            {
+                return NotFound();
+            }
+
+            var response = new EndpointInfo
+            {
+                Name = state.Data.Name,
+                RecognizedMessages = state.Data.RecognizedMessages.ToDictionary(kvp => kvp.Key, kvp => MapMessageKind(kvp.Value)),
+                Instances = state.Data.Instances.ToDictionary(kvp => kvp.Key, kvp => MapInstance(kvp.Value))
+            };
+
+            return Ok(response);
+        }
+
+        static EndpointInstanceInfo MapInstance(EndpointInstance value)
+        {
+            return new EndpointInstanceInfo
+            {
+                InputQueue = value.InputQueue,
+                InstanceId = value.InstanceId,
+                Site = value.Site,
+                RecognizedMessages = value.RecognizedMessages.ToDictionary(kvp => kvp.Key, kvp => MapMessageKind(kvp.Value)),
+                MessageHandlers = value.MessageHandlers.Select(MapHandler).ToList()
+            };
+        }
+
+        static MessageHandlerInstanceInfo MapHandler(MessageHandlerInstance value)
+        {
+            return new MessageHandlerInstanceInfo
+            {
+                Name = value.Name, 
+                HandledMessage = value.HandledMessage
+            };
+        }
+
+        static MessageKind MapMessageKind(ApiContract.MessageKind value)
+        {
+            return value switch
+            {
+                ApiContract.MessageKind.Command => MessageKind.Command,
+                ApiContract.MessageKind.Event => MessageKind.Event,
+                ApiContract.MessageKind.Message => MessageKind.Message,
+                ApiContract.MessageKind.Undefined => MessageKind.Undefined,
+                _ => throw new Exception($"Unrecognized message kind: {value}")
+            };
+        }
+
+        static ApiContract.MessageKind MapMessageKind(MessageKind value)
+        {
+            return value switch
+            {
+                MessageKind.Command => ApiContract.MessageKind.Command,
+                MessageKind.Event => ApiContract.MessageKind.Event,
+                MessageKind.Message => ApiContract.MessageKind.Message,
+                MessageKind.Undefined => ApiContract.MessageKind.Undefined,
+                _ => throw new Exception($"Unrecognized message kind: {value}")
+            };
+        }
+
     }
 }

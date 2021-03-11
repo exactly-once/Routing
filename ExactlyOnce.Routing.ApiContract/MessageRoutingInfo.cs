@@ -2,9 +2,9 @@
 
 namespace ExactlyOnce.Routing.ApiContract
 {
-    public class MessageDestinations
+    public class MessageRoutingInfo
     {
         public string MessageType { get; set; }
-        public List<Destination> Destinations { get; set; }
+        public List<DestinationInfo> Destinations { get; set; }
     }
 }

@@ -64,7 +64,7 @@ namespace ExactlyOnce.Routing.AcceptanceTests
                 .WithManagedEndpoint<Context, NewReceiver>("a", "Router")
                 .Do("Wait for message handlers to be registered", async (ctx, client) =>
                 {
-                    var handlers = await client.GetDestinations(typeof(MyRequest).FullName);
+                    var handlers = await client.GetMessageType(typeof(MyRequest).FullName);
                     if (handlers == null || handlers.Destinations.Count(x =>
                         x.HandlerType.Contains(nameof(MyRequestHandler))) < 2) //Both endpoints register their destinations
                     {

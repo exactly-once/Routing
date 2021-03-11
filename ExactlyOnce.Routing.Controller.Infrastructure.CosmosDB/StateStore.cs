@@ -36,7 +36,7 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
                 .CreateIfNotExistsAsync()
                 .ConfigureAwait(false);
 
-            var queryDefinition = new QueryDefinition("SELECT c.id as Id, c.SearchKey as Name FROM c");
+            var queryDefinition = new QueryDefinition($"SELECT c.id as Id, c.SearchKey as Name FROM c WHERE c.SearchKey like \"%{keyword}%\"");
             var options = new QueryRequestOptions();
             var feedIterator = container.GetItemQueryStreamIterator(
                 queryDefinition,

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
@@ -29,25 +30,46 @@ namespace ExactlyOnce.Routing.SelfHostedController
         }
 
         [HttpGet]
-        [Route("Destinations/{messageType}")]
-        public async Task<IActionResult> GetDestinations(string messageType)
+        [Route("ListMessageTypes/{keyword}")]
+        public async Task<IActionResult> ListMessageTypes(string keyword)
         {
-            var stateId = DeterministicGuid.MakeId(messageType);
-            var (state, etag) = await stateStore.Load<MessageRoutingState>(stateId.ToString()).ConfigureAwait(false);
+            var result = await stateStore.List(typeof(MessageRoutingState), keyword, CancellationToken.None);
+
+            var response = new ListResponse
+            {
+                Items = result.Select(x => new ListItem
+                {
+                    Id = x.Id,
+                    Name = x.Name
+                }).ToList()
+            };
+
+            return Ok(response);
+        }
+
+        [HttpGet]
+        [Route("MessageType/{idOrName}")]
+        public async Task<IActionResult> GetMessageType(string idOrName)
+        {
+            if (!Guid.TryParse(idOrName, out var id))
+            {
+                id = DeterministicGuid.MakeId(idOrName);
+            }
+            var (state, etag) = await stateStore.Load<MessageRoutingState>(id.ToString(), CancellationToken.None);
             if (etag == null || state.Data == null)
             {
                 return NotFound();
             }
 
             var destinations = state.Data.Destinations != null
-                ? state.Data.Destinations.Select(x => new ApiContract.Destination
+                ? state.Data.Destinations.Select(x => new ApiContract.DestinationInfo
                 {
                     HandlerType = x.Handler,
                     EndpointName = x.Endpoint,
                     Active = x.State == DestinationState.Active
                 }).ToList()
-                : new List<ApiContract.Destination>();
-            var response = new MessageDestinations
+                : new List<DestinationInfo>();
+            var response = new MessageRoutingInfo
             {
                 MessageType = state.Data.MessageType,
                 Destinations = destinations

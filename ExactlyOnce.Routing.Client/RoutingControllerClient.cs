@@ -21,76 +21,39 @@ namespace ExactlyOnce.Routing.Client
             };
         }
 
-        public async Task<ListResponse> ListEndpoints(string keyword)
+        public Task<ListResponse> ListEndpoints(string keyword)
         {
-            try
-            {
-                var response = await httpClient.GetAsync($"ListEndpoints/{keyword}").ConfigureAwait(false);
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return null;
-                }
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new Exception($"Unexpected status code when listing endpoints for keyword {keyword}: {response.StatusCode}: {response.ReasonPhrase}.");
-                }
-
-                var contentString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return JsonConvert.DeserializeObject<ListResponse>(contentString);
-
-            }
-            catch (HttpRequestException e)
-            {
-                throw new Exception($"Error while listing endpoints for keyword {keyword}.", e);
-            }
+            return Get<ListResponse>($"ListEndpoints/{keyword}");
         }
 
-        public async Task<MessageDestinations> GetDestinations(string messageType)
+        public Task<ListResponse> ListRouters(string keyword)
         {
-            try
-            {
-                var response = await httpClient.GetAsync($"Destinations/{messageType}").ConfigureAwait(false);
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return null;
-                }
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new Exception($"Unexpected status code when getting destinations for type {messageType}: {response.StatusCode}: {response.ReasonPhrase}.");
-                }
-
-                var contentString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return JsonConvert.DeserializeObject<MessageDestinations>(contentString);
-
-            }
-            catch (HttpRequestException e)
-            {
-                throw new Exception($"Error while getting destinations for type {messageType}.", e);
-            }
+            return Get<ListResponse>($"ListRouters/{keyword}");
         }
 
-        public async Task<RoutingTable> GetRoutingTable()
+        public Task<ListResponse> ListMessageTypes(string keyword)
         {
-            try
-            {
-                var response = await httpClient.GetAsync("GetRoutingTable").ConfigureAwait(false);
-                if (response.StatusCode == HttpStatusCode.NotFound)
-                {
-                    return null;
-                }
-                if (!response.IsSuccessStatusCode)
-                {
-                    throw new Exception($"Unexpected status code when requesting the routing table state: {response.StatusCode}: {response.ReasonPhrase}.");
-                }
+            return Get<ListResponse>($"ListMessageTypes/{keyword}");
+        }
 
-                var contentString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                return JsonConvert.DeserializeObject<RoutingTable>(contentString);
+        public Task<MessageRoutingInfo> GetMessageType(string idOrName)
+        {
+            return Get<MessageRoutingInfo>($"MessageType/{idOrName}");
+        }
 
-            }
-            catch (HttpRequestException e)
-            {
-                throw new Exception($"Error while requesting the routing table state.", e);
-            }
+        public Task<EndpointInfo> GetEndpoint(string idOrName)
+        {
+            return Get<EndpointInfo>($"Endpoint/{idOrName}");
+        }
+
+        public Task<RouterInfo> GetRouter(string idOrName)
+        {
+            return Get<RouterInfo>($"Router/{idOrName}");
+        }
+
+        public Task<RoutingTable> GetRoutingTable()
+        {
+            return Get<RoutingTable>("GetRoutingTable");
         }
 
         public Task RegisterEndpoint(string endpointName, string instanceId, string inputQueue,
@@ -112,7 +75,7 @@ namespace ExactlyOnce.Routing.Client
                 ReportId = requestId
             };
 
-            return Post("api/ProcessEndpointReport", payload, "registering endpoint instance");
+            return Post("api/ProcessEndpointReport", payload);
         }
 
         public Task RegisterEndpointSite(string endpointName, string instanceId, string siteName, string requestId)
@@ -124,7 +87,7 @@ namespace ExactlyOnce.Routing.Client
                 ReportId = requestId,
                 Site = siteName
             };
-            return Post("api/ProcessEndpointHello", payload, "registering endpoint instance's site");
+            return Post("api/ProcessEndpointHello", payload);
         }
 
         public Task RegisterLegacyDestination(string sendingEndpoint, string messageType, string destinationEndpoint, string destinationQueue,
@@ -140,7 +103,7 @@ namespace ExactlyOnce.Routing.Client
                 RequestId = requestId
             };
 
-            return Post("api/RegisterLegacyDestination", payload, "registering legacy destination");
+            return Post("api/RegisterLegacyDestination", payload);
         }
 
         public Task Subscribe(string endpointName, Type handlerType, Type replacedHandlerType, Type messageType,
@@ -172,7 +135,7 @@ namespace ExactlyOnce.Routing.Client
                 ReplacedHandlerType = replacedHandlerType
             };
 
-            return Post("api/Subscribe", request, "subscribing");
+            return Post("api/Subscribe", request);
         }
 
         public Task Unsubscribe(string endpointName, string handlerType, string messageType, string requestId)
@@ -185,7 +148,7 @@ namespace ExactlyOnce.Routing.Client
                 MessageType = messageType,
             };
 
-            return Post("api/Unsubscribe", request, "unsubscribing");
+            return Post("api/Unsubscribe", request);
         }
 
         public Task Appoint(string endpointName, Type handlerType, Type messageType, string requestId)
@@ -206,7 +169,7 @@ namespace ExactlyOnce.Routing.Client
                 MessageType = messageType,
             };
 
-            return Post("api/Appoint", request, "appointing");
+            return Post("api/Appoint", request);
         }
 
         public Task Dismiss(string endpointName, string handlerType, string messageType, string requestId)
@@ -219,10 +182,10 @@ namespace ExactlyOnce.Routing.Client
                 MessageType = messageType,
             };
 
-            return Post("api/Dismiss", request, "dismissing");
+            return Post("api/Dismiss", request);
         }
 
-        async Task Post(string urlSuffix, object payload, string action)
+        async Task Post(string urlSuffix, object payload)
         {
             var payloadJson = JsonConvert.SerializeObject(payload);
             try
@@ -231,14 +194,37 @@ namespace ExactlyOnce.Routing.Client
                     new StringContent(payloadJson, Encoding.UTF8, "application/json")).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new Exception($"Unexpected status code when {action}: {response.StatusCode}: {response.ReasonPhrase}.");
+                    throw new Exception($"Unexpected status code when posting to {urlSuffix}: {response.StatusCode}: {response.ReasonPhrase}.");
                 }
             }
             catch (HttpRequestException e)
             {
-                throw new Exception($"Error while {action}.", e);
+                throw new Exception($"Error while posting to {urlSuffix}.", e);
             }
         }
 
+        public async Task<T> Get<T>(string urlSuffix)
+        {
+            try
+            {
+                var response = await httpClient.GetAsync(urlSuffix).ConfigureAwait(false);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    return default;
+                }
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Unexpected status code when querying {urlSuffix}: {response.StatusCode}: {response.ReasonPhrase}.");
+                }
+
+                var contentString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                return JsonConvert.DeserializeObject<T>(contentString);
+
+            }
+            catch (HttpRequestException e)
+            {
+                throw new Exception($"Error while querying {urlSuffix}.", e);
+            }
+        }
     }
 }
