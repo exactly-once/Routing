@@ -24,7 +24,7 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        var config = EndpointUtils.PrepareEndpoint("OtherEndpoint", args);
+        var config = EndpointUtils.PrepareEndpoint("SomeEndpoint", args);
 
         var endpoint = await Endpoint.Start(config);
 

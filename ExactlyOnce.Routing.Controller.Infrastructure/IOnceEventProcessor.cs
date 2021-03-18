@@ -13,13 +13,16 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
     {
         readonly ExactlyOnceProcessor processor;
         readonly Subscriptions subscriptions;
+        readonly Search search;
         readonly string requestId;
         readonly string stateId;
 
-        public OnceEventProcessor(ExactlyOnceProcessor processor, Subscriptions subscriptions, string requestId, string stateId)
+        public OnceEventProcessor(ExactlyOnceProcessor processor, Subscriptions subscriptions, Search search,
+            string requestId, string stateId)
         {
             this.processor = processor;
             this.subscriptions = subscriptions;
+            this.search = search;
             this.requestId = requestId;
             this.stateId = stateId;
         }
@@ -42,7 +45,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                     return await processor.Process(operationId, entityKey, destinationType, state =>
                     {
                         var eventDrivenState = (State)state;
-                        var events = eventDrivenState.OnEvent(eventMessage, subscriptions).ToArray();
+                        var events = eventDrivenState.OnEvent(eventMessage, subscriptions, search).ToArray();
                         return events;
                     });
                 }

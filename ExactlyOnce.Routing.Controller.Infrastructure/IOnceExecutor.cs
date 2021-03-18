@@ -46,7 +46,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
                     var result = await processor.Process(operationId, entityKey, typeof(TState), state =>
                     {
                         var eventDrivenState = (State<TEntity>) state;
-                        var events = eventDrivenState.Invoke(action, constructor, search.GetSearchKey, subscriptions).ToArray();
+                        var events = eventDrivenState.Invoke(action, constructor, search, subscriptions).ToArray();
                         return events;
                     });
 

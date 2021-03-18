@@ -22,7 +22,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
 
         public IOnceEventProcessor CreateEventProcessor(string requestId, string stateId)
         {
-            return new OnceEventProcessor(processor, subscriptions, requestId, stateId);
+            return new OnceEventProcessor(processor, subscriptions, search, requestId, stateId);
         }
     }
 }

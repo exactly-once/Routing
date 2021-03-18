@@ -6,8 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
-    <PackageReference Include="System.CommandLine.Rendering" Version="0.3.0-alpha.20574.7" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21161.1" />
+    <PackageReference Include="System.CommandLine.Rendering" Version="0.3.0-alpha.21161.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExactlyOnce.Routing.Client\ExactlyOnce.Routing.Client.csproj" />
   </ItemGroup>
 
 </Project>

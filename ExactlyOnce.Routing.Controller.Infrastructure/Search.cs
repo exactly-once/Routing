@@ -13,6 +13,8 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             RegisterSearchKey<LegacyEndpoint>(x => x.Name);
             RegisterSearchKey<Router>(x => x.Name);
             RegisterSearchKey<MessageRouting>(x => x.MessageType);
+            RegisterSearchKey<Topology>(x => null);
+            RegisterSearchKey<RoutingTable>(x => null);
         }
 
         public string GetSearchKey<T>(T entity)

@@ -6,8 +6,8 @@ using NServiceBus.Features;
 // ReSharper disable once CheckNamespace
 namespace NServiceBus
 {
-    //TODO: Generic query API (search, list_all, get_details)
-    //TODO: Production-quality command line tool
+    //TODO: Getting details via web api
+    //TODO: Implement comments (e.g. dismiss, subscribe) in the command line tool
     //TODO: Visualizations (graphviz)
     //TODO: SQL persistence
     //TODO: Authorization

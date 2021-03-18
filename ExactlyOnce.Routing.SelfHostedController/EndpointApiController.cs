@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiCommon;
 using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
@@ -45,7 +46,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
                 ? new Dictionary<string, MessageKind>()
                 : request.RecognizedMessages.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => MapMessageKind(kvp.Value));
+                    kvp => kvp.Value.MapMessageKind());
 
             var messages = await executor.Once(
                 e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers, request.AutoSubscribe),
@@ -133,7 +134,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
             var response = new EndpointInfo
             {
                 Name = state.Data.Name,
-                RecognizedMessages = state.Data.RecognizedMessages.ToDictionary(kvp => kvp.Key, kvp => MapMessageKind(kvp.Value)),
+                RecognizedMessages = state.Data.RecognizedMessages.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.MapMessageKind()),
                 Instances = state.Data.Instances.ToDictionary(kvp => kvp.Key, kvp => MapInstance(kvp.Value))
             };
 
@@ -147,7 +148,7 @@ namespace ExactlyOnce.Routing.SelfHostedController
                 InputQueue = value.InputQueue,
                 InstanceId = value.InstanceId,
                 Site = value.Site,
-                RecognizedMessages = value.RecognizedMessages.ToDictionary(kvp => kvp.Key, kvp => MapMessageKind(kvp.Value)),
+                RecognizedMessages = value.RecognizedMessages.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.MapMessageKind()),
                 MessageHandlers = value.MessageHandlers.Select(MapHandler).ToList()
             };
         }
@@ -160,30 +161,5 @@ namespace ExactlyOnce.Routing.SelfHostedController
                 HandledMessage = value.HandledMessage
             };
         }
-
-        static MessageKind MapMessageKind(ApiContract.MessageKind value)
-        {
-            return value switch
-            {
-                ApiContract.MessageKind.Command => MessageKind.Command,
-                ApiContract.MessageKind.Event => MessageKind.Event,
-                ApiContract.MessageKind.Message => MessageKind.Message,
-                ApiContract.MessageKind.Undefined => MessageKind.Undefined,
-                _ => throw new Exception($"Unrecognized message kind: {value}")
-            };
-        }
-
-        static ApiContract.MessageKind MapMessageKind(MessageKind value)
-        {
-            return value switch
-            {
-                MessageKind.Command => ApiContract.MessageKind.Command,
-                MessageKind.Event => ApiContract.MessageKind.Event,
-                MessageKind.Message => ApiContract.MessageKind.Message,
-                MessageKind.Undefined => ApiContract.MessageKind.Undefined,
-                _ => throw new Exception($"Unrecognized message kind: {value}")
-            };
-        }
-
     }
 }

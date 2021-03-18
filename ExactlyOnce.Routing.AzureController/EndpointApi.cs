@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiCommon;
 using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
@@ -29,7 +30,7 @@ namespace ExactlyOnce.Routing.AzureController
                 ? new Dictionary<string, MessageKind>()
                 : request.RecognizedMessages.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => MapMessageKind(kvp.Value));
+                    kvp => kvp.Value.MapMessageKind());
 
             var messages = await execute.Once(
                 e => e.OnStartup(request.InstanceId, request.InputQueue, messageKinds, messageHandlers, request.AutoSubscribe),
@@ -40,18 +41,6 @@ namespace ExactlyOnce.Routing.AzureController
                 eventCollector.Add(message);
             }
             return new OkResult();
-        }
-
-        static MessageKind MapMessageKind(ApiContract.MessageKind value)
-        {
-            return value switch
-            {
-                ApiContract.MessageKind.Command => MessageKind.Command,
-                ApiContract.MessageKind.Event => MessageKind.Event,
-                ApiContract.MessageKind.Message => MessageKind.Message,
-                ApiContract.MessageKind.Undefined => MessageKind.Undefined,
-                _ => throw new Exception($"Unrecognized message kind: {value}")
-            };
         }
 
         [FunctionName(nameof(ProcessEndpointHello))]

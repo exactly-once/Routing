@@ -1,14 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ExactlyOnce.Routing.ApiCommon;
 using ExactlyOnce.Routing.ApiContract;
 using ExactlyOnce.Routing.Controller.Model;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Destination = ExactlyOnce.Routing.Controller.Model.Destination;
 
 namespace ExactlyOnce.Routing.SelfHostedController
 {
@@ -61,14 +60,14 @@ namespace ExactlyOnce.Routing.SelfHostedController
                 return NotFound();
             }
 
-            var destinations = state.Data.Destinations != null
-                ? state.Data.Destinations.Select(x => new ApiContract.DestinationInfo
-                {
-                    HandlerType = x.Handler,
-                    EndpointName = x.Endpoint,
-                    Active = x.State == DestinationState.Active
-                }).ToList()
-                : new List<DestinationInfo>();
+            var destinations = state.Data.Destinations.Select(x => new DestinationInfo
+            {
+                HandlerType = x.Handler,
+                EndpointName = x.Endpoint,
+                Active = x.State == DestinationState.Active,
+                MessageKind = x.MessageKind.MapMessageKind(),
+                Sites = x.Sites
+            }).ToList();
             var response = new MessageRoutingInfo
             {
                 MessageType = state.Data.MessageType,

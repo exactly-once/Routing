@@ -19,7 +19,7 @@ namespace ExactlyOnce.Routing.Tests
 
             var subs = new Subscriptions();
             subs.Subscribe<MyEventDrivenState, FollowUpEvent>(x => "ID");
-            var result = state.OnEvent(new EventMessage("message-id", null, null, "dest", "type", new MyEvent()), subs).ToArray();
+            var result = state.OnEvent(new EventMessage("message-id", null, null, "dest", "type", new MyEvent()), subs, new Search()).ToArray();
 
             var followUpMessage = result.Single();
             var followUpPayload = followUpMessage.Payload as FollowUpEvent;

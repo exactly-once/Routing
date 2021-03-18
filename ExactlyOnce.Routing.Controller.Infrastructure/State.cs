@@ -14,13 +14,13 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
         public Inbox Inbox { get; set; } = new Inbox();
         public Outbox Outbox { get; set; } = new Outbox();
 
-        public IEnumerable<EventMessage> OnEvent(EventMessage eventMessage, Subscriptions subscriptions)
+        public IEnumerable<EventMessage> OnEvent(EventMessage eventMessage, Subscriptions subscriptions, Search search)
         {
-            var generatedEvents = Inbox.AppendAndProcess(eventMessage, Process);
+            var generatedEvents = Inbox.AppendAndProcess(eventMessage, e => Process(e, search));
             return subscriptions.ToMessages(generatedEvents, this);
         }
 
-        protected abstract IEnumerable<IEvent> Process(IEvent e);
+        protected abstract IEnumerable<IEvent> Process(IEvent e, Search search);
     }
 
     public abstract class State<T> : State
@@ -30,19 +30,20 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
         public IEnumerable<EventMessage> Invoke(
             Func<T, IEnumerable<IEvent>> action, 
             Func<T> constructor,
-            Func<T, string> getSearchKey,
+            Search search,
             Subscriptions subscriptions)
         {
             Data ??= constructor();
-            SearchKey = getSearchKey(Data);
+            SearchKey = search.GetSearchKey(Data);
             var generatedEvents = action(Data);
             return subscriptions.ToMessages(generatedEvents, this);
         }
 
-        protected override IEnumerable<IEvent> Process(IEvent e)
+        protected override IEnumerable<IEvent> Process(IEvent e, Search search)
         {
             var dataType = GetType().BaseType.GetGenericArguments()[0];
             Data ??= (T) Activator.CreateInstance(dataType);
+            SearchKey = search.GetSearchKey(Data);
             return HandlerInvoker.Process(e, Data, dataType);
         }
     }

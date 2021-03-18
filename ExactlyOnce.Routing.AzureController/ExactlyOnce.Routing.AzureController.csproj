@@ -11,6 +11,7 @@
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="3.0.3" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\ExactlyOnce.Routing.ApiCommon\ExactlyOnce.Routing.ApiCommon.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.ApiContract\ExactlyOnce.Routing.ApiContract.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB\ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB.csproj" />
     <ProjectReference Include="..\ExactlyOnce.Routing.Controller.Infrastructure\ExactlyOnce.Routing.Controller.Infrastructure.csproj" />

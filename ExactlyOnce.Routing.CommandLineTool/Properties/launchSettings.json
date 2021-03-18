@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ExactlyOnce.Routing.CommandLineTool": {
+      "commandName": "Project",
+      "commandLineArgs": "--url http://localhost:7071/api endpoint list --name End"
+    }
+  }
+}

@@ -57,9 +57,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SenderReceiverRoutingMigrat
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleInfrastructure", "Samples\SampleInfrastructure\SampleInfrastructure.csproj", "{116B251C-31A3-474E-BCE3-BAE23219B8F1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.ApiContract", "ExactlyOnce.Routing.ApiContract\ExactlyOnce.Routing.ApiContract.csproj", "{899BD611-3620-490F-B8E0-0B2582F8B3D9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.ApiContract", "ExactlyOnce.Routing.ApiContract\ExactlyOnce.Routing.ApiContract.csproj", "{899BD611-3620-490F-B8E0-0B2582F8B3D9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.CommandLineTool", "ExactlyOnce.Routing.CommandLineTool\ExactlyOnce.Routing.CommandLineTool.csproj", "{A501762D-16AE-4F86-925B-0E2183976C10}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExactlyOnce.Routing.CommandLineTool", "ExactlyOnce.Routing.CommandLineTool\ExactlyOnce.Routing.CommandLineTool.csproj", "{A501762D-16AE-4F86-925B-0E2183976C10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExactlyOnce.Routing.ApiCommon", "ExactlyOnce.Routing.ApiCommon\ExactlyOnce.Routing.ApiCommon.csproj", "{3AC964E9-7802-4A69-A0DB-0EFA3044141A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -171,6 +173,10 @@ Global
 		{A501762D-16AE-4F86-925B-0E2183976C10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A501762D-16AE-4F86-925B-0E2183976C10}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A501762D-16AE-4F86-925B-0E2183976C10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3AC964E9-7802-4A69-A0DB-0EFA3044141A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3AC964E9-7802-4A69-A0DB-0EFA3044141A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3AC964E9-7802-4A69-A0DB-0EFA3044141A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3AC964E9-7802-4A69-A0DB-0EFA3044141A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
