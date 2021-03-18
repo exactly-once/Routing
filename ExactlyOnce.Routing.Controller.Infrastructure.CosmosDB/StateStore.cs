@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using ExactlyOnce.Routing.Controller.Model.Azure;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
 {
@@ -63,7 +62,7 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
             return allResults;
         }
 
-        public async Task<(State, string)> Load(string stateId, Type stateType, CancellationToken cancellationToken = default)
+        public async Task<(State, object)> Load(string stateId, Type stateType, CancellationToken cancellationToken = default)
         {
             Container container = await database
                 .DefineContainer(stateType.Name, "/id")
@@ -95,7 +94,7 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
             return (state, response.Headers.ETag);
         }
 
-        public async Task<string> Upsert(string stateId, State value, string version, CancellationToken cancellationToken = default)
+        public async Task<object> Upsert(string stateId, State value, object version, CancellationToken cancellationToken = default)
         {
             Container container = await database
                 .DefineContainer(value.GetType().Name, "/id")
@@ -133,7 +132,7 @@ namespace ExactlyOnce.Routing.Controller.Infrastructure.CosmosDB
                                 new PartitionKey(stateId),
                                 requestOptions: new ItemRequestOptions
                                 {
-                                    IfMatchEtag = version,
+                                    IfMatchEtag = (string) version,
                                 }, cancellationToken: cancellationToken)
                             .ConfigureAwait(false);
 

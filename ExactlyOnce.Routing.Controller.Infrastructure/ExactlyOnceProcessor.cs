@@ -50,7 +50,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             await outboxStore.Store(outboxState, cancellationToken)
                 .ConfigureAwait(false);
 
-            string nextVersion;
+            object nextVersion;
 
             try
             {
@@ -70,7 +70,7 @@ namespace ExactlyOnce.Routing.Controller.Model.Azure
             return sideEffect;
         }
 
-        async Task FinishTransaction<TState>(string stateId, TState state, string version, CancellationToken cancellationToken = default) where TState : State
+        async Task FinishTransaction<TState>(string stateId, TState state, object version, CancellationToken cancellationToken = default) where TState : State
         {
             if (state.TxId.HasValue == false)
             {

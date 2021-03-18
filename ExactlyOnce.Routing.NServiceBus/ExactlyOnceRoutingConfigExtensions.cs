@@ -6,14 +6,13 @@ using NServiceBus.Features;
 // ReSharper disable once CheckNamespace
 namespace NServiceBus
 {
-    //TODO: Getting details via web api
-    //TODO: Implement comments (e.g. dismiss, subscribe) in the command line tool
-    //TODO: Visualizations (graphviz)
+    //TODO: Remove the outbox
     //TODO: SQL persistence
+    //TODO: Visualizations (graphviz)
     //TODO: Authorization
     //TODO: DLQ proxy for ServiceControl
 
-    //TODO: Change notifications
+    //TODO: Change notifications for the web UI that loads eagerly all items
     //Add new signalrR hub that will post events when an entity changes. These notifications will be subscribed by the client (web or console)
     //And the client will be re-loading entities when they change. This way the client will always have the current view of the system
     //Filtering etc will always be done on the client as the amount of data expected to be there is going to be relatively small
