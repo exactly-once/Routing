@@ -6,11 +6,9 @@ using NServiceBus.Features;
 // ReSharper disable once CheckNamespace
 namespace NServiceBus
 {
-    //TODO: Remove the outbox
+    //TODO: Remove the outbox as the deduplication in the inbox should be enough
     //TODO: SQL persistence
     //TODO: Visualizations (graphviz)
-    //TODO: Authorization
-    //TODO: DLQ proxy for ServiceControl
 
     //TODO: Change notifications for the web UI that loads eagerly all items
     //Add new signalrR hub that will post events when an entity changes. These notifications will be subscribed by the client (web or console)

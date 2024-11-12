@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NServiceBus.Persistence.Sql" Version="6.2.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\ExactlyOnce.Routing.NServiceBus\ExactlyOnce.Routing.NServiceBus.csproj" />
+    <ProjectReference Include="..\..\SampleInfrastructure\SampleInfrastructure.csproj" />
+    <ProjectReference Include="..\OrderSubmittedHandler\OrderSubmittedHandler.csproj" />
+  </ItemGroup>
+
+</Project>
